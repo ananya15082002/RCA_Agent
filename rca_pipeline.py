@@ -19,19 +19,8 @@ import urllib.parse
 
 def create_clean_redirect_url(target_url):
     """Create a clean redirect URL that bypasses Google's URL wrapper"""
-    # Use TinyURL API to create a short URL that bypasses Google's wrapper
-    try:
-        import requests
-        # Use TinyURL API to create a short URL
-        response = requests.get(f"http://tinyurl.com/api-create.php?url={target_url}", timeout=5)
-        if response.status_code == 200:
-            return response.text.strip()
-        else:
-            # Fallback to direct URL
-            return target_url
-    except Exception:
-        # If API fails, return direct URL
-        return target_url
+    # Return direct URL instead of using TinyURL
+    return target_url
 
 # --- CONFIG ---
 IST = pytz.timezone('Asia/Kolkata')
