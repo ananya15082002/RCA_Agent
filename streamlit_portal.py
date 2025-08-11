@@ -436,20 +436,22 @@ def main():
         
         error_card = data['error_card']
         
-        # Display error summary
-        st.markdown("### 📋 Error Summary")
-        display_error_summary(error_card)
+        # Dashboard access button - better positioning
+        col1, col2, col3 = st.columns([2, 1, 1])
+        with col1:
+            st.markdown("### 📋 Error Summary")
+            display_error_summary(error_card)
         
-        # Dashboard access button on the right
-        st.markdown("""
-        <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
-        <a href="http://3.110.92.208:8502" target="_blank" style="text-decoration: none;">
-        <button style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 20px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-        📊 Dashboard
-        </button>
-        </a>
-        </div>
-        """, unsafe_allow_html=True)
+        with col3:
+            st.markdown("""
+            <div style="text-align: center; margin-top: 20px;">
+            <a href="http://3.110.92.208:8502" target="_blank" style="text-decoration: none;">
+            <button style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 25px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 100%;">
+            📊 Error Dashboard
+            </button>
+            </a>
+            </div>
+            """, unsafe_allow_html=True)
         
         # Create tabs for different sections
         tab1, tab2, tab3, tab4 = st.tabs(["📈 Error Chart", "📊 Correlation Data", "🔍 RCA Analysis", "📋 Raw Data"])

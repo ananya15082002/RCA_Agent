@@ -1715,7 +1715,7 @@ Latest Encountered: {last_time_display}
         web_url = create_clean_redirect_url(direct_url)
         is_public = True
     except Exception:
-        direct_url = f"http://localhost:8501/?error_dir={os.path.basename(card_dir)}"
+        direct_url = f"http://3.110.92.208:8501/?error_dir={os.path.basename(card_dir)}"
         web_url = create_clean_redirect_url(direct_url)
         is_public = False
     
