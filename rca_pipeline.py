@@ -1732,33 +1732,33 @@ Latest Encountered: {last_time_display}
     # Create clean text-based card (no charts due to Google Chat limitations)
     enhanced_content = full_content
     
-        main_payload = {
-            "cardsV2": [{
-                "cardId": "errorCard",
-                "card": {
-                    "header": {"title": "🚨 Error Alert"},
-                    "sections": [
-                        {
-                            "widgets": [
-                            {"textParagraph": {"text": enhanced_content}}
-                            ]
-                        },
-                        {
-                            "widgets": [
-                                {
-                                    "buttonList": {
-                                        "buttons": [{
-                                            "text": "📊 View RCA Portal",
-                                            "onClick": {"openLink": {"url": web_url}}
-                                        }]
-                                    }
+    main_payload = {
+        "cardsV2": [{
+            "cardId": "errorCard",
+            "card": {
+                "header": {"title": "🚨 Error Alert"},
+                "sections": [
+                    {
+                        "widgets": [
+                        {"textParagraph": {"text": enhanced_content}}
+                        ]
+                    },
+                    {
+                        "widgets": [
+                            {
+                                "buttonList": {
+                                    "buttons": [{
+                                        "text": "📊 View RCA Portal",
+                                        "onClick": {"openLink": {"url": web_url}}
+                                    }]
                                 }
-                            ]
-                        }
-                    ]
-                }
-            }]
-        }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }]
+    }
     
     # Send main card
     try:
