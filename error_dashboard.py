@@ -301,7 +301,7 @@ def create_error_summary_table(filtered_data, historical_data):
             # Create the report URL
             error_dir = error_info['Error Directory']
             if error_dir:
-                report_url = f"http://10.1.223.229:8501/?error_dir={error_dir}"
+                report_url = f"http://3.110.92.208:8501/?error_dir={error_dir}"
                 st.markdown(f"[📊 View Report]({report_url})")
             else:
                 st.markdown("📊 No report available")
@@ -504,15 +504,13 @@ def create_metrics_dashboard(filtered_data, hours):
                 margin=dict(l=50, r=50, t=30, b=50)
             )
         st.plotly_chart(fig, use_container_width=True)
-            
-            # Show results summary
-            total_results = len(filtered_data)
-            st.caption(f"Showing {min(20, total_results)} out of {total_results} results. Show All")
-            
-            # Show common filters
-            st.caption("Common: env=UNSET, service.version=UNSET, span_kind=client, status_code=ERROR")
-        else:
-            st.info("No time series data available for timeline analysis.")
+        
+        # Show results summary
+        total_results = len(filtered_data)
+        st.caption(f"Showing {min(20, total_results)} out of {total_results} results. Show All")
+        
+        # Show common filters
+        st.caption("Common: env=UNSET, service.version=UNSET, span_kind=client, status_code=ERROR")
     else:
         st.info("No error data available for timeline analysis.")
 
@@ -568,7 +566,7 @@ def create_error_details_table(filtered_data):
                 # Create the report URL
                 error_dir = error['Error Directory']
                 if error_dir:
-                    report_url = f"http://10.1.223.229:8501/?error_dir={error_dir}"
+                    report_url = f"http://3.110.92.208:8501/?error_dir={error_dir}"
                     st.markdown(f"[📊 View Report]({report_url})")
                 else:
                     st.markdown("📊 No report available")
