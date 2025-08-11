@@ -295,7 +295,7 @@ def create_error_summary_table(filtered_data, historical_data):
                 
                 with col2:
                     if error_dir:
-                        report_url = f"http://10.1.223.229:8501/?error_dir={error_dir}"
+                        report_url = f"http://18.61.175.16:8501/?error_dir={error_dir}"
                         st.markdown(f"[📊 View Report]({report_url})")
                     else:
                         st.markdown("📊 No report")
@@ -655,6 +655,9 @@ def create_service_analytics(filtered_data):
 
 def main():
     st.markdown('<h1 class="main-header">Error-Dashboard</h1>', unsafe_allow_html=True)
+    
+    # Add VPN security note
+    st.info("🔒 **Security Note**: This system is accessible via VPN for authorized team members only. Ensure you're connected to the corporate VPN before accessing sensitive error data.")
     
     # Custom time range input
     st.sidebar.header("Time Range Configuration")
