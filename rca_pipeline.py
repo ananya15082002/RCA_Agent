@@ -19,8 +19,19 @@ import urllib.parse
 
 def create_clean_redirect_url(target_url):
     """Create a clean redirect URL that bypasses Google's URL wrapper"""
-    # Return direct URL instead of using TinyURL
-    return target_url
+    # Use TinyURL API to create a short URL that bypasses Google's wrapper
+    try:
+        import requests
+        # Use TinyURL API to create a short URL
+        response = requests.get(f"http://tinyurl.com/api-create.php?url={target_url}", timeout=5)
+        if response.status_code == 200:
+            return response.text.strip()
+        else:
+            # Fallback to direct URL
+            return target_url
+    except Exception:
+        # If API fails, return direct URL
+        return target_url
 
 # --- CONFIG ---
 IST = pytz.timezone('Asia/Kolkata')
@@ -1706,14 +1717,14 @@ Latest Encountered: {last_time_display}
     
     # Create Streamlit portal URL - use public IP for global access
     try:
-        # Use public IP for global access
-        public_ip = "18.61.175.16"  # Your EC2 public IP
+                    # Use public IP for global access
+            public_ip = "49.36.211.68"  # Your EC2 public IP
         # Create a specific URL for this error report - use Streamlit portal
         direct_url = f"http://{public_ip}:8501/?error_dir={os.path.basename(card_dir)}"
         web_url = create_clean_redirect_url(direct_url)
         is_public = True
     except Exception:
-        direct_url = f"http://18.61.175.16:8501/?error_dir={os.path.basename(card_dir)}"
+        direct_url = f"http://49.36.211.68:8501/?error_dir={os.path.basename(card_dir)}"
         web_url = create_clean_redirect_url(direct_url)
         is_public = False
     
