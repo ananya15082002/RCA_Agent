@@ -15,6 +15,7 @@ import subprocess
 from datetime import datetime, timedelta
 from collections import defaultdict
 import io
+from io import BytesIO
 import urllib.parse
 
 def create_clean_redirect_url(target_url):
@@ -39,7 +40,7 @@ METRIC_URL = 'http://observability-prod.fxtrt.io:3130/api/metrics/api/v1/query_r
 TRACE_SEARCH_URL = "https://cubeapm-newrelic-prod.fxtrt.io/api/traces/api/v1/search"
 TRACE_DETAIL_URL = "http://observability-prod.fxtrt.io:3130/api/traces/api/v1/traces"
 LOGS_API_URL = "http://observability-prod.fxtrt.io:3130/api/logs/select/logsql/query"
-GOOGLE_CHAT_WEBHOOK = "https://chat.googleapis.com/v1/spaces/AAQADdrSRHs/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=fDT768dyG3qkEJhW-vsY6wv_-lw_hwqSsPVRuhCIl1Q"
+GOOGLE_CHAT_WEBHOOK = "https://chat.googleapis.com/v1/spaces/AAQADdrSRHs/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=dzWOyoZjPZBZ41kDBXD8Q4wl5v4vGOaIOKMZtYWVsLA"
 # Note: Hugging Face LLM integration removed - system uses enhanced template-based RCA
 OUTPUT_ROOT = "error_outputs"
 STATE_FILE = "last_processed_epoch.txt"
@@ -110,16 +111,28 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     )
     '''
     
-    # Query 2: ERROR status codes (where http_code might be NA or missing)
+    # Query 2: ERROR status codes (where http_code might be NA or missing) - COMMENTED OUT
+    # query2 = f'''
+    # sum by (env,service,root_name,http_code,exception,span_kind) (
+    #     increase(cube_apm_calls_total{{
+    #         env="{UNSET_ENVIRONMENT}",
+    #         service=~"({service_filter})",
+    #         span_kind=~"server|consumer",
+    #         status_code="ERROR"
+    #     }}[{WINDOW_MINUTES}m])
+    # )
+    # '''
+    
+    # Query 2: 5xx errors excluding HTTP 500 and specific environments (only > 0 errors)
     query2 = f'''
-    sum by (env,service,root_name,http_code,exception,span_kind) (
+    sum by (env,service,root_name,http_code) (
         increase(cube_apm_calls_total{{
-            env="{UNSET_ENVIRONMENT}",
-            service=~"({service_filter})",
             span_kind=~"server|consumer",
-            status_code="ERROR"
+            env!~"fxtrt-shared-prod|fxtrt-devportal-prod",
+            http_code=~"5..",
+            http_code!="500"
         }}[{WINDOW_MINUTES}m])
-    )
+    ) > 0
     '''
     
     queries = [query1, query2]
@@ -356,8 +369,20 @@ def get_first_last_times(logs, spans):
     times_sorted = sorted(times)
     
     # Convert to IST and format properly
-    first_time = times_sorted[0].tz_localize('UTC').tz_convert(IST).strftime('%Y-%m-%d %H:%M:%S IST')
-    last_time = times_sorted[-1].tz_localize('UTC').tz_convert(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+    try:
+        if times_sorted[0].tz is None:
+            first_time = times_sorted[0].tz_localize('UTC').tz_convert(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+        else:
+            first_time = times_sorted[0].tz_convert(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+        
+        if times_sorted[-1].tz is None:
+            last_time = times_sorted[-1].tz_localize('UTC').tz_convert(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+        else:
+            last_time = times_sorted[-1].tz_convert(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+    except Exception as e:
+        # Fallback to simple formatting
+        first_time = times_sorted[0].strftime('%Y-%m-%d %H:%M:%S')
+        last_time = times_sorted[-1].strftime('%Y-%m-%d %H:%M:%S')
     
     return first_time, last_time
 
