@@ -1717,8 +1717,8 @@ Latest Encountered: {last_time_display}
     
     # Create Streamlit portal URL - use public IP for global access
     try:
-                    # Use public IP for global access
-            public_ip = "18.61.175.16"  # Your EC2 public IP
+        # Use public IP for global access
+        public_ip = "18.61.175.16"  # Your EC2 public IP
         # Create a specific URL for this error report - use Streamlit portal
         direct_url = f"http://{public_ip}:8501/?error_dir={os.path.basename(card_dir)}"
         web_url = create_clean_redirect_url(direct_url)
