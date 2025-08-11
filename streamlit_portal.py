@@ -9,6 +9,33 @@ from datetime import datetime
 import base64
 from io import BytesIO
 from streamlit_ace import st_ace
+import pytz
+
+# Configure IST timezone
+IST = pytz.timezone('Asia/Kolkata')
+
+def format_timestamp_to_ist(timestamp_str):
+    """Convert timestamp string to IST format"""
+    if not timestamp_str or timestamp_str == 'Unknown':
+        return 'Unknown'
+    try:
+        # Handle different timestamp formats
+        if 'T' in timestamp_str and '+' in timestamp_str:
+            # ISO format with timezone
+            dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        elif 'T' in timestamp_str:
+            # ISO format without timezone (assume UTC)
+            dt = datetime.fromisoformat(timestamp_str + '+00:00')
+        else:
+            # Try parsing as regular datetime
+            dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+            dt = pytz.utc.localize(dt)
+        
+        # Convert to IST
+        ist_time = dt.astimezone(IST)
+        return ist_time.strftime('%Y-%m-%d %H:%M:%S IST')
+    except Exception:
+        return timestamp_str
 
 # Configure page
 st.set_page_config(

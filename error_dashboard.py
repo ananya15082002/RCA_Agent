@@ -12,10 +12,36 @@ from collections import defaultdict, Counter
 import time
 import threading
 
-# Set page config
+# Configure IST timezone
+IST = pytz.timezone('Asia/Kolkata')
+
+def format_timestamp_to_ist(timestamp_str):
+    """Convert timestamp string to IST format"""
+    if not timestamp_str or timestamp_str == 'Unknown':
+        return 'Unknown'
+    try:
+        # Handle different timestamp formats
+        if 'T' in timestamp_str and '+' in timestamp_str:
+            # ISO format with timezone
+            dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        elif 'T' in timestamp_str:
+            # ISO format without timezone (assume UTC)
+            dt = datetime.fromisoformat(timestamp_str + '+00:00')
+        else:
+            # Try parsing as regular datetime
+            dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+            dt = pytz.utc.localize(dt)
+        
+        # Convert to IST
+        ist_time = dt.astimezone(IST)
+        return ist_time.strftime('%Y-%m-%d %H:%M:%S IST')
+    except Exception:
+        return timestamp_str
+
+# Configure page
 st.set_page_config(
-    page_title="Error Analytics Dashboard",
-    page_icon="📊",
+    page_title="Error Dashboard",
+    page_icon="🚨",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -230,11 +256,15 @@ def create_error_summary_table(filtered_data, historical_data):
         else:
             category = "🟢 Low Frequency"
         
+        # Convert to IST for display
+        first_ist = first_encountered.astimezone(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+        last_ist = last_encountered.astimezone(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+        
         summary_data.append({
             'Error Type': error_type,
             'Count': total_count,
-            'First Encountered': first_encountered.strftime('%Y-%m-%d %H:%M:%S'),
-            'Last Encountered': last_encountered.strftime('%Y-%m-%d %H:%M:%S'),
+            'First Encountered': first_ist,
+            'Last Encountered': last_ist,
             'Category': category,
             'Error Directory': error_dir
         })
@@ -541,8 +571,8 @@ def create_error_details_table(filtered_data):
         error_rows.append({
             'Service': service_name,
             'Error Count': error_count,
-            'First Encountered': first_encountered,
-            'Last Encountered': last_encountered,
+            'First Encountered': format_timestamp_to_ist(first_encountered),
+            'Last Encountered': format_timestamp_to_ist(last_encountered),
             'Error Directory': error_dir
         })
     
@@ -675,7 +705,7 @@ def main():
     historical_data = get_historical_data(error_data, hours)
     
     # Display last update time
-    st.sidebar.write(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    st.sidebar.write(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S IST')}")
     
     # Create dashboard sections
     create_metrics_dashboard(filtered_data, hours)
