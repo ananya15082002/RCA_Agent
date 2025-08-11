@@ -354,7 +354,12 @@ def get_first_last_times(logs, spans):
     if not times:
         return "", ""
     times_sorted = sorted(times)
-    return times_sorted[0].isoformat(), times_sorted[-1].isoformat()
+    
+    # Convert to IST and format properly
+    first_time = times_sorted[0].tz_localize('UTC').tz_convert(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+    last_time = times_sorted[-1].tz_localize('UTC').tz_convert(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+    
+    return first_time, last_time
 
 def extract_comprehensive_evidence(all_span_meta, all_log_meta, card):
     """Extract comprehensive evidence data with proper formatting"""
@@ -1673,7 +1678,11 @@ def send_to_google_chat(card, card_dir, first_encountered, last_encountered, tag
         if not time_str:
             return "Unknown"
         try:
-            # Parse the ISO format time
+            # If already in IST format, return as is
+            if 'IST' in time_str:
+                return time_str
+            
+            # Parse the ISO format time (UTC)
             dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
             # Convert to IST
             ist_time = dt.astimezone(IST)
