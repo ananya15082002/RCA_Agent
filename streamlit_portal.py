@@ -463,25 +463,22 @@ def main():
         
         error_card = data['error_card']
         
-        # Dashboard access button - improved positioning and visibility
-        st.markdown("### 📋 Error Summary")
-        display_error_summary(error_card)
+        # Dashboard access button - simple and on the right
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("### 📋 Error Summary")
+            display_error_summary(error_card)
         
-        # Add VPN security note
-        st.info("🔒 **Security Note**: This system is accessible via VPN for authorized team members only.")
-        
-        # Dashboard button in a prominent position
-        st.markdown("""
-        <div style="text-align: center; margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 15px; border: 2px solid #667eea;">
-        <h3 style="margin-bottom: 15px; color: #2c3e50;">📊 Access Error Dashboard</h3>
-        <a href="http://18.61.175.16:8502" target="_blank" style="text-decoration: none;">
-        <button style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 20px 40px; border-radius: 30px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.3); transition: all 0.3s ease; width: auto; min-width: 200px;">
-        🚨 View Error Dashboard
-        </button>
-        </a>
-        <p style="margin-top: 10px; color: #7f8c8d; font-size: 14px;">Click to view comprehensive error analytics and metrics</p>
-        </div>
-        """, unsafe_allow_html=True)
+        with col2:
+            st.markdown("""
+            <div style="text-align: center; margin-top: 20px;">
+            <a href="http://18.61.175.16:8502" target="_blank" style="text-decoration: none;">
+            <button style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 14px; cursor: pointer;">
+            📊 Dashboard
+            </button>
+            </a>
+            </div>
+            """, unsafe_allow_html=True)
         
         # Create tabs for different sections
         tab1, tab2, tab3, tab4 = st.tabs(["📈 Error Chart", "📊 Correlation Data", "🔍 RCA Analysis", "📋 Raw Data"])

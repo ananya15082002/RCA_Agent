@@ -1892,8 +1892,8 @@ Keep it concise and factual.
 def run_window(window_start_dt, window_end_dt):
     start_epoch = to_epoch(window_start_dt)
     end_epoch = to_epoch(window_end_dt)
-            start_str = window_start_dt.strftime("%Y-%m-%d %H:%M:%S IST")
-        end_str = window_end_dt.strftime("%Y-%m-%d %H:%M:%S IST")
+    start_str = window_start_dt.strftime("%Y-%m-%d %H:%M:%S IST")
+    end_str = window_end_dt.strftime("%Y-%m-%d %H:%M:%S IST")
     print(f"\n[Cycle] Fetching 5xx error metrics for {len(TARGET_SERVICES)} UNSET environment services from {start_str} to {end_str} (IST)")
 
     error_cards = fetch_error_metrics(start_epoch, end_epoch, start_str, end_str)

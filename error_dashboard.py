@@ -656,9 +656,6 @@ def create_service_analytics(filtered_data):
 def main():
     st.markdown('<h1 class="main-header">Error-Dashboard</h1>', unsafe_allow_html=True)
     
-    # Add VPN security note
-    st.info("🔒 **Security Note**: This system is accessible via VPN for authorized team members only. Ensure you're connected to the corporate VPN before accessing sensitive error data.")
-    
     # Custom time range input
     st.sidebar.header("Time Range Configuration")
     
