@@ -282,7 +282,7 @@ def is_error_span(tags):
                 # Check for 5xx errors only
                 if v_str.startswith('5'):
                     if len(v_str) == 3:
-                    return True
+                        return True
                 if isinstance(v, (int, float)) and (500 <= int(v) <= 599):
                     return True
             except Exception:
