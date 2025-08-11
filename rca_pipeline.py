@@ -126,16 +126,16 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     
     for i, query in enumerate(queries):
         try:
-    data = {
-        "query": query,
-        "start": start_epoch,
-        "end": end_epoch,
-        "step": "30"
-    }
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    r = requests.post(METRIC_URL, data=data, headers=headers, timeout=30)
-    r.raise_for_status()
-    result = r.json()
+            data = {
+                "query": query,
+                "start": start_epoch,
+                "end": end_epoch,
+                "step": "30"
+            }
+            headers = {"Content-Type": "application/x-www-form-urlencoded"}
+            r = requests.post(METRIC_URL, data=data, headers=headers, timeout=30)
+            r.raise_for_status()
+            result = r.json()
             
             for m in result.get("data", {}).get("result", []):
                 count = float(m["values"][-1][1])
@@ -1979,17 +1979,17 @@ def main_loop():
     
     while True:
         try:
-    now = datetime.now(tz=IST)
-    
-    # Always fetch the most recent time window (last 5 minutes)
-    start_dt = now - timedelta(seconds=WINDOW_SIZE)
-    end_dt = now
+            now = datetime.now(tz=IST)
+            
+            # Always fetch the most recent time window (last 5 minutes)
+            start_dt = now - timedelta(seconds=WINDOW_SIZE)
+            end_dt = now
 
             print(f"\n[START] Processing from {start_dt} to {end_dt}")
-    run_window(start_dt, end_dt)
+            run_window(start_dt, end_dt)
 
-    # Save end time as last processed
-    save_last_processed_time(to_epoch(end_dt))
+            # Save end time as last processed
+            save_last_processed_time(to_epoch(end_dt))
             
             # Wait for next cycle (5 minutes)
             print(f"[WAIT] Waiting 5 minutes until next cycle...")
