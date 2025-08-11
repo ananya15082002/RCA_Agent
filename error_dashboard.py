@@ -301,7 +301,7 @@ def create_error_summary_table(filtered_data, historical_data):
             # Create the report URL
             error_dir = error_info['Error Directory']
             if error_dir:
-                report_url = f"http://3.110.92.208:8501/?error_dir={error_dir}"
+                report_url = f"http://18.61.175.16:8501/?error_dir={error_dir}"
                 st.markdown(f"[📊 View Report]({report_url})")
             else:
                 st.markdown("📊 No report available")
@@ -566,7 +566,7 @@ def create_error_details_table(filtered_data):
                 # Create the report URL
                 error_dir = error['Error Directory']
                 if error_dir:
-                    report_url = f"http://3.110.92.208:8501/?error_dir={error_dir}"
+                    report_url = f"http://18.61.175.16:8501/?error_dir={error_dir}"
                     st.markdown(f"[📊 View Report]({report_url})")
                 else:
                     st.markdown("📊 No report available")

@@ -445,7 +445,7 @@ def main():
         with col3:
             st.markdown("""
             <div style="text-align: center; margin-top: 20px;">
-            <a href="http://3.110.92.208:8502" target="_blank" style="text-decoration: none;">
+            <a href="http://18.61.175.16:8502" target="_blank" style="text-decoration: none;">
             <button style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 25px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 100%;">
             📊 Error Dashboard
             </button>
