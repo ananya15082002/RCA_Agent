@@ -1706,15 +1706,12 @@ Latest Encountered: {last_time_display}
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     report_id = f"{service_name}_{timestamp}"
     
-    # Create Streamlit portal URL - get local IP for network access
+    # Create Streamlit portal URL - use public IP for global access
     try:
-        import socket
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
+        # Use public IP for global access
+        public_ip = "3.110.92.208"  # Your EC2 public IP
         # Create a specific URL for this error report - use Streamlit portal
-        direct_url = f"http://{local_ip}:8501/?error_dir={os.path.basename(card_dir)}"
+        direct_url = f"http://{public_ip}:8501/?error_dir={os.path.basename(card_dir)}"
         web_url = create_clean_redirect_url(direct_url)
         is_public = True
     except Exception:
