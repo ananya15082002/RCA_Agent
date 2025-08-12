@@ -8,8 +8,8 @@
 - **IP Whitelist**: System is configured to work with VPN IP ranges
 
 ### **System URLs**
-- **RCA Portal**: `http://18.61.175.16:8501` (Requires VPN)
-- **Error Dashboard**: `http://18.61.175.16:8502` (Requires VPN)
+- **RCA Portal**: `http://3.7.67.210:8501` (Requires VPN)
+- **Error Dashboard**: `http://3.7.67.210:8502` (Requires VPN)
 - **Google Chat Links**: All links point to VPN-accessible URLs
 
 ### **Security Measures**
@@ -32,12 +32,12 @@
 
 #### **For Team Members:**
 1. **Connect to Corporate VPN**
-2. **Access RCA Portal**: `http://18.61.175.16:8501`
-3. **Access Error Dashboard**: `http://18.61.175.16:8502`
+2. **Access RCA Portal**: `http://3.7.67.210:8501`
+3. **Access Error Dashboard**: `http://3.7.67.210:8502`
 4. **View Google Chat Alerts**: All links work with VPN
 
 #### **For Administrators:**
-1. **SSH Access**: `ssh ec2-user@18.61.175.16`
+1. **SSH Access**: `ssh ec2-user@3.7.67.210`
 2. **Service Management**: Use systemd commands
 3. **Log Monitoring**: Check system logs for access patterns
 

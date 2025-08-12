@@ -472,7 +472,7 @@ def main():
         with col2:
             st.markdown("""
             <div style="text-align: center; margin-top: 20px;">
-            <a href="http://3.110.92.208:8502" target="_blank" style="text-decoration: none;">
+            <a href="http://3.7.67.210:8502" target="_blank" style="text-decoration: none;">
             <button style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 14px; cursor: pointer;">
             📊 Dashboard
             </button>
