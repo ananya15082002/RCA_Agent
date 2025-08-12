@@ -29,7 +29,7 @@ METRIC_URL = 'http://observability-prod.fxtrt.io:3130/api/metrics/api/v1/query_r
 TRACE_SEARCH_URL = "https://cubeapm-newrelic-prod.fxtrt.io/api/traces/api/v1/search"
 TRACE_DETAIL_URL = "http://observability-prod.fxtrt.io:3130/api/traces/api/v1/traces"
 LOGS_API_URL = "http://observability-prod.fxtrt.io:3130/api/logs/select/logsql/query"
-GOOGLE_CHAT_WEBHOOK = "https://chat.googleapis.com/v1/spaces/AAQADdrSRHs/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=dzWOyoZjPZBZ41kDBXD8Q4wl5v4vGOaIOKMZtYWVsLA"
+GOOGLE_CHAT_WEBHOOK = "https://chat.googleapis.com/v1/spaces/AAQAsi2-pJQ/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=kwdBqpmd8KtBvhGsWY1CmyqyPIeRHrQ0NU5RcNgDpRE"
 # Note: Hugging Face LLM integration removed - system uses enhanced template-based RCA
 OUTPUT_ROOT = "error_outputs"
 STATE_FILE = "last_processed_epoch.txt"
