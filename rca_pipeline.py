@@ -20,8 +20,19 @@ import urllib.parse
 
 def create_clean_redirect_url(target_url):
     """Create a clean redirect URL that bypasses Google's URL wrapper"""
-    # Return direct URL - no external dependencies
-    return target_url
+    # Use TinyURL API to create a short URL that bypasses Google's wrapper
+    try:
+        import requests
+        # Use TinyURL API to create a short URL
+        response = requests.get(f"http://tinyurl.com/api-create.php?url={target_url}", timeout=5)
+        if response.status_code == 200:
+            return response.text.strip()
+        else:
+            # Fallback to direct URL
+            return target_url
+    except Exception:
+        # If API fails, return direct URL
+        return target_url
 
 # --- CONFIG ---
 IST = pytz.timezone('Asia/Kolkata')
@@ -1723,14 +1734,12 @@ Latest Encountered: {last_time_display}
         # Use public IP for global access
         public_ip = "3.7.67.210"  # Your EC2 public IP
         # Create a specific URL for this error report - use Streamlit portal
-        # Use a format that Google Chat won't auto-convert to HTTPS
         direct_url = f"http://{public_ip}:8501/?error_dir={os.path.basename(card_dir)}"
-        # Create a text-based URL that users can copy-paste
-        web_url = f"Copy this URL: http://{public_ip}:8501/?error_dir={os.path.basename(card_dir)}"
+        web_url = create_clean_redirect_url(direct_url)
         is_public = True
     except Exception:
         direct_url = f"http://3.7.67.210:8501/?error_dir={os.path.basename(card_dir)}"
-        web_url = f"Copy this URL: http://3.7.67.210:8501/?error_dir={os.path.basename(card_dir)}"
+        web_url = create_clean_redirect_url(direct_url)
         is_public = False
     
     # Add tags to the content if available
@@ -1757,8 +1766,11 @@ Latest Encountered: {last_time_display}
                     {
                         "widgets": [
                             {
-                                "textParagraph": {
-                                    "text": f"🔗 **Access Error Report:**\n{web_url}\n\n💡 **Instructions:** Copy the URL above and paste it in your browser while connected to VPN."
+                                "buttonList": {
+                                    "buttons": [{
+                                        "text": "📊 View RCA Portal",
+                                        "onClick": {"openLink": {"url": web_url}}
+                                    }]
                                 }
                             }
                         ]
