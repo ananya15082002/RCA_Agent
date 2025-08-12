@@ -88,7 +88,7 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     # Create service filter for target services
     service_filter = '|'.join(TARGET_SERVICES)
     
-    # Query 1: HTTP 5xx errors EXCEPT 500 (501, 502, 503, 504, etc.)
+    # Query 1: HTTP 5xx errors EXCEPT 500 (501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511)
     query1 = f'''
     sum by (env,service,root_name,http_code,exception,span_kind) (
         increase(cube_apm_calls_total{{
@@ -1718,16 +1718,16 @@ Latest Encountered: {last_time_display}
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     report_id = f"{service_name}_{timestamp}"
     
-    # Create Streamlit portal URL - use VPN-accessible IP
+    # Create Streamlit portal URL - use public IP for global access
     try:
-        # Use VPN-accessible IP for team access
-        vpn_ip = "18.61.175.16"  # VPN-accessible IP from security group
+        # Use public IP for global access
+        public_ip = "3.7.67.210"  # Your EC2 public IP
         # Create a specific URL for this error report - use Streamlit portal
-        direct_url = f"http://{vpn_ip}:8501/?error_dir={os.path.basename(card_dir)}"
+        direct_url = f"http://{public_ip}:8501/?error_dir={os.path.basename(card_dir)}"
         web_url = create_clean_redirect_url(direct_url)
         is_public = True
     except Exception:
-        direct_url = f"http://18.61.175.16:8501/?error_dir={os.path.basename(card_dir)}"
+        direct_url = f"http://3.7.67.210:8501/?error_dir={os.path.basename(card_dir)}"
         web_url = create_clean_redirect_url(direct_url)
         is_public = False
     
