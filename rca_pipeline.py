@@ -20,19 +20,8 @@ import urllib.parse
 
 def create_clean_redirect_url(target_url):
     """Create a clean redirect URL that bypasses Google's URL wrapper"""
-    # Use TinyURL API to create a short URL that bypasses Google's wrapper
-    try:
-        import requests
-        # Use TinyURL API to create a short URL
-        response = requests.get(f"http://tinyurl.com/api-create.php?url={target_url}", timeout=5)
-        if response.status_code == 200:
-            return response.text.strip()
-        else:
-            # Fallback to direct URL
-            return target_url
-    except Exception:
-        # If API fails, return direct URL
-        return target_url
+    # Return direct URL - no external dependencies
+    return target_url
 
 # --- CONFIG ---
 IST = pytz.timezone('Asia/Kolkata')
@@ -99,40 +88,27 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     # Create service filter for target services
     service_filter = '|'.join(TARGET_SERVICES)
     
-    # Query 1: HTTP 4xx and 5xx errors
+    # Query 1: HTTP 500 errors only
     query1 = f'''
     sum by (env,service,root_name,http_code,exception,span_kind) (
         increase(cube_apm_calls_total{{
             env="{UNSET_ENVIRONMENT}",
             service=~"({service_filter})",
             span_kind=~"server|consumer",
-            http_code=~"5.."
+            http_code="500"
         }}[{WINDOW_MINUTES}m])
     )
     '''
     
-    # Query 2: ERROR status codes (where http_code might be NA or missing) - COMMENTED OUT
-    # query2 = f'''
-    # sum by (env,service,root_name,http_code,exception,span_kind) (
-    #     increase(cube_apm_calls_total{{
-    #         env="{UNSET_ENVIRONMENT}",
-    #         service=~"({service_filter})",
-    #         span_kind=~"server|consumer",
-    #         status_code="ERROR"
-    #     }}[{WINDOW_MINUTES}m])
-    # )
-    # '''
-    
-    # Query 2: 5xx errors excluding HTTP 500 and specific environments (only > 0 errors)
+    # Query 2: Only HTTP 500 errors for other environments (excluding specific ones)
     query2 = f'''
-    sum by (env,service,root_name,http_code) (
+    sum by (env,service,root_name,http_code,exception,span_kind) (
         increase(cube_apm_calls_total{{
             span_kind=~"server|consumer",
             env!~"fxtrt-shared-prod|fxtrt-devportal-prod",
-            http_code=~"5..",
-            http_code!="500"
+            http_code="500"
         }}[{WINDOW_MINUTES}m])
-    ) > 0
+    )
     '''
     
     queries = [query1, query2]
