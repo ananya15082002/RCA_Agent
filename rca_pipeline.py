@@ -1723,12 +1723,14 @@ Latest Encountered: {last_time_display}
         # Use public IP for global access
         public_ip = "3.7.67.210"  # Your EC2 public IP
         # Create a specific URL for this error report - use Streamlit portal
+        # Use a format that Google Chat won't auto-convert to HTTPS
         direct_url = f"http://{public_ip}:8501/?error_dir={os.path.basename(card_dir)}"
-        web_url = create_clean_redirect_url(direct_url)
+        # Create a text-based URL that users can copy-paste
+        web_url = f"Copy this URL: http://{public_ip}:8501/?error_dir={os.path.basename(card_dir)}"
         is_public = True
     except Exception:
         direct_url = f"http://3.7.67.210:8501/?error_dir={os.path.basename(card_dir)}"
-        web_url = create_clean_redirect_url(direct_url)
+        web_url = f"Copy this URL: http://3.7.67.210:8501/?error_dir={os.path.basename(card_dir)}"
         is_public = False
     
     # Add tags to the content if available
@@ -1738,9 +1740,8 @@ Latest Encountered: {last_time_display}
     
     full_content = main_content + tags_content
     
-    # Create clean text-based card with URL instructions
-    url_instructions = f"\n\n🔗 **Access Error Report:**\nCopy and paste this URL in your browser:\n`{direct_url}`\n\n💡 **Note:** If the link doesn't work, copy the URL above and paste it directly in your browser."
-    enhanced_content = full_content + url_instructions
+    # Create clean text-based card (no charts due to Google Chat limitations)
+    enhanced_content = full_content
     
     main_payload = {
         "cardsV2": [{
@@ -1756,11 +1757,8 @@ Latest Encountered: {last_time_display}
                     {
                         "widgets": [
                             {
-                                "buttonList": {
-                                    "buttons": [{
-                                        "text": "📊 Try Direct Link",
-                                        "onClick": {"openLink": {"url": direct_url}}
-                                    }]
+                                "textParagraph": {
+                                    "text": f"🔗 **Access Error Report:**\n{web_url}\n\n💡 **Instructions:** Copy the URL above and paste it in your browser while connected to VPN."
                                 }
                             }
                         ]
