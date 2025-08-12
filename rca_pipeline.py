@@ -1738,8 +1738,9 @@ Latest Encountered: {last_time_display}
     
     full_content = main_content + tags_content
     
-    # Create clean text-based card (no charts due to Google Chat limitations)
-    enhanced_content = full_content
+    # Create clean text-based card with URL instructions
+    url_instructions = f"\n\n🔗 **Access Error Report:**\nCopy and paste this URL in your browser:\n`{direct_url}`\n\n💡 **Note:** If the link doesn't work, copy the URL above and paste it directly in your browser."
+    enhanced_content = full_content + url_instructions
     
     main_payload = {
         "cardsV2": [{
@@ -1757,8 +1758,8 @@ Latest Encountered: {last_time_display}
                             {
                                 "buttonList": {
                                     "buttons": [{
-                                        "text": "📊 View RCA Portal",
-                                        "onClick": {"openLink": {"url": web_url}}
+                                        "text": "📊 Try Direct Link",
+                                        "onClick": {"openLink": {"url": direct_url}}
                                     }]
                                 }
                             }

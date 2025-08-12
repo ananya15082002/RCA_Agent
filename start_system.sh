@@ -49,11 +49,11 @@ start_service "rca_pipeline" "python rca_pipeline.py" "logs/rca_pipeline.log"
 
 # Start Streamlit Portal
 echo "🌐 Starting Streamlit Portal..."
-start_service "streamlit_portal" "streamlit run streamlit_portal.py --server.port 8501 --server.address 0.0.0.0" "logs/streamlit_portal.log"
+start_service "streamlit_portal" "streamlit run streamlit_portal.py --server.port 8501 --server.address 0.0.0.0 --server.enableCORS false --server.enableXsrfProtection false" "logs/streamlit_portal.log"
 
 # Start Error Dashboard
 echo "📊 Starting Error Dashboard..."
-start_service "error_dashboard" "streamlit run error_dashboard.py --server.port 8502 --server.address 0.0.0.0" "logs/error_dashboard.log"
+start_service "error_dashboard" "streamlit run error_dashboard.py --server.port 8502 --server.address 0.0.0.0 --server.enableCORS false --server.enableXsrfProtection false" "logs/error_dashboard.log"
 
 # Chart server removed - Google Chat has image limitations
 
