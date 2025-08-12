@@ -88,7 +88,7 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     # Create service filter for target services
     service_filter = '|'.join(TARGET_SERVICES)
     
-    # Query 1: HTTP 5xx errors EXCEPT 500 (501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511)
+    # Query 1: 5xx errors EXCEPT 500 (501, 502, 503, etc.)
     query1 = f'''
     sum by (env,service,root_name,http_code,exception,span_kind) (
         increase(cube_apm_calls_total{{
@@ -101,7 +101,7 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     )
     '''
     
-    # Query 2: HTTP 5xx errors EXCEPT 500 for other environments (excluding specific ones)
+    # Query 2: 5xx errors EXCEPT 500 for other environments (excluding specific ones)
     query2 = f'''
     sum by (env,service,root_name,http_code,exception,span_kind) (
         increase(cube_apm_calls_total{{
