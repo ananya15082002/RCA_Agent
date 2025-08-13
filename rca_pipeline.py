@@ -17,6 +17,7 @@ from collections import defaultdict
 import io
 from io import BytesIO
 import urllib.parse
+import hashlib
 
 def create_clean_redirect_url(target_url):
     """Create a clean redirect URL that bypasses Google's URL wrapper"""
@@ -90,6 +91,53 @@ def to_epoch(dt):
 def epoch_to_ist(epoch):
     return datetime.fromtimestamp(epoch, IST)
 
+def generate_cubeapm_link(card, start_epoch, end_epoch):
+    """Generate CubeAPM error link for the given error card"""
+    try:
+        # Extract parameters from error card
+        env = card.get('env', 'Unknown')
+        service = card.get('service', 'Unknown')
+        http_code = card.get('http_code', 'Unknown')
+        exception = card.get('exception', 'Unknown Error')
+        root_name = card.get('root_name', 'Unknown')
+        
+        # Generate a unique alert ID (using timestamp and service hash)
+        alert_id_base = f"{service}_{http_code}_{exception}_{start_epoch}"
+        alert_id = int(hashlib.md5(alert_id_base.encode()).hexdigest()[:16], 16)
+        
+        # Calculate time parameters
+        time_window = "5m"  # 5 minutes window
+        refresh_time = int(time.time() * 1000)  # Current timestamp in milliseconds
+        
+        # Build the CubeAPM URL
+        base_url = "https://observability-prod.fxtrt.io/apm"
+        
+        # URL parameters
+        params = {
+            'alert_id': str(alert_id),
+            'time': time_window,
+            'refresh': str(refresh_time),
+            'tab': 'errors',
+            'section': '',
+            'section2': '',
+            'env': env,
+            'service': service,
+            'endpoint': root_name if root_name != 'Unknown' else '',
+            'category': exception if exception != 'Unknown Error' else '',
+            'host': '',
+            'sv': ''
+        }
+        
+        # Build query string
+        query_string = '&'.join([f"{k}={v}" for k, v in params.items() if v])
+        cubeapm_url = f"{base_url}?{query_string}"
+        
+        return cubeapm_url
+        
+    except Exception as e:
+        print(f"[WARN] Error generating CubeAPM link: {e}")
+        return None
+
 def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     """
     Fetch error metrics for UNSET environment services with 5xx HTTP codes and ERROR status codes.
@@ -154,15 +202,20 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
                     error_card = {
                         "env": env,
                         "service": service,
-            "span_kind": m["metric"].get("span_kind"),
+                        "span_kind": m["metric"].get("span_kind"),
                         "http_code": http_code,
                         "exception": m["metric"].get("exception", "Unknown Error"),
                         "root_name": m["metric"].get("root_name", "Unknown"),
                         "count": count,
-            "window_start": start_str,
-            "window_end": end_str,
-            "values": m["values"]
-        }
+                        "window_start": start_str,
+                        "window_end": end_str,
+                        "values": m["values"]
+                    }
+                    
+                    # Generate CubeAPM link for this error
+                    cubeapm_link = generate_cubeapm_link(error_card, start_epoch, end_epoch)
+                    if cubeapm_link:
+                        error_card["cubeapm_link"] = cubeapm_link
                     all_error_cards.append(error_card)
                     
         except Exception as e:
@@ -1767,14 +1820,87 @@ Latest Encountered: {last_time_display}
                         "widgets": [
                             {
                                 "buttonList": {
-                                    "buttons": [{
-                                        "text": "📊 View RCA Portal",
-                                        "onClick": {"openLink": {"url": web_url}}
-                                    }]
+                                    "buttons": [
+                                        {
+                                            "text": "📊 View RCA Portal",
+                                            "onClick": {"openLink": {"url": web_url}}
+                                        }
+                                    ]
                                 }
                             }
                         ]
                     }
+                ]
+            }
+        }]
+    }
+    
+    # Add CubeAPM link if available
+    cubeapm_link = card.get('cubeapm_link')
+    if cubeapm_link:
+        # Create a separate card for CubeAPM link
+        cubeapm_payload = {
+            "cardsV2": [{
+                "cardId": "cubeapmCard",
+                "card": {
+                    "header": {"title": "🔍 CubeAPM Link"},
+                    "sections": [
+                        {
+                            "widgets": [
+                                {
+                                    "buttonList": {
+                                        "buttons": [{
+                                            "text": "🔍 Open in CubeAPM",
+                                            "onClick": {"openLink": {"url": cubeapm_link}}
+                                        }]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }]
+        }
+        
+        # Send CubeAPM card
+        try:
+            r = requests.post(GOOGLE_CHAT_WEBHOOK, json=cubeapm_payload, timeout=10)
+            if r.status_code == 200:
+                print(f"[✓] Sent CubeAPM link to Google Chat for {service_name}")
+            else:
+                print(f"[WARN] CubeAPM card send failed: {r.status_code} {r.text}")
+        except Exception as e:
+            print(f"[ERR] Exception in CubeAPM card send: {e}")
+    
+    main_payload = {
+        "cardsV2": [{
+            "cardId": "errorCard",
+            "card": {
+                "header": {"title": "🚨 Error Alert"},
+                "sections": [
+                    {
+                        "widgets": [
+                        {"textParagraph": {"text": enhanced_content}}
+                        ]
+                    },
+                    {
+                        "widgets": [
+                            {
+                                "buttonList": {
+                                    "buttons": [
+                                        {
+                                            "text": "📊 View RCA Portal",
+                                            "onClick": {"openLink": {"url": web_url}}
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }]
+    }
                 ]
             }
         }]

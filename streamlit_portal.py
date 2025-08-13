@@ -234,6 +234,25 @@ def display_error_summary(error_card):
     
     with col4:
         st.metric("Error Count", f"{error_card.get('count', 0):.1f}")
+    
+    # Add links section
+    st.markdown("### 🔗 Quick Links")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # RCA Report link
+        st.markdown("**📊 RCA Report**")
+        st.markdown("Detailed root cause analysis and correlation data")
+    
+    with col2:
+        # CubeAPM link
+        cubeapm_link = error_card.get('cubeapm_link')
+        if cubeapm_link:
+            st.markdown("**🔍 CubeAPM**")
+            st.markdown(f"[Open in CubeAPM]({cubeapm_link})")
+        else:
+            st.markdown("**🔍 CubeAPM**")
+            st.markdown("No CubeAPM link available")
 
 def display_correlation_table(data):
     """Display correlation data with improved timeline view and tree visualization"""
