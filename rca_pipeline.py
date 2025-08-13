@@ -105,8 +105,68 @@ def generate_cubeapm_link(card, start_epoch, end_epoch):
         alert_id_base = f"{service}_{http_code}_{exception}_{start_epoch}"
         alert_id = int(hashlib.md5(alert_id_base.encode()).hexdigest()[:16], 16)
         
-        # Calculate time parameters
-        time_window = "5m"  # 5 minutes window
+        # Calculate dynamic time parameters based on error occurrence
+        # First try to use actual first/last encountered times if available
+        first_encountered = card.get('first_encountered')
+        last_encountered = card.get('last_encountered')
+        
+        if first_encountered and last_encountered and first_encountered != 'Unknown' and last_encountered != 'Unknown':
+            try:
+                # Parse the actual error occurrence times
+                if isinstance(first_encountered, str):
+                    # Convert IST time string to epoch
+                    first_dt = datetime.strptime(first_encountered, '%Y-%m-%d %H:%M:%S IST')
+                    first_dt = IST.localize(first_dt)
+                    first_epoch = int(first_dt.timestamp())
+                else:
+                    first_epoch = start_epoch
+                
+                if isinstance(last_encountered, str):
+                    # Convert IST time string to epoch
+                    last_dt = datetime.strptime(last_encountered, '%Y-%m-%d %H:%M:%S IST')
+                    last_dt = IST.localize(last_dt)
+                    last_epoch = int(last_dt.timestamp())
+                else:
+                    last_epoch = end_epoch
+                
+                # Calculate actual error duration
+                error_duration = last_epoch - first_epoch
+                error_minutes = int(error_duration / 60)
+                
+                # Add buffer time (double the error duration for better visibility)
+                buffer_minutes = max(error_minutes * 2, 5)  # At least 5 minutes buffer
+                
+            except Exception:
+                # Fallback to window-based calculation
+                error_minutes = int((end_epoch - start_epoch) / 60)
+                buffer_minutes = max(error_minutes * 2, 5)
+        else:
+            # Use the monitoring window duration
+            error_minutes = int((end_epoch - start_epoch) / 60)
+            buffer_minutes = max(error_minutes * 2, 5)
+        
+        # Determine appropriate time range based on buffer
+        if buffer_minutes <= 5:
+            time_window = "5m"
+        elif buffer_minutes <= 15:
+            time_window = "15m"
+        elif buffer_minutes <= 30:
+            time_window = "30m"
+        elif buffer_minutes <= 60:
+            time_window = "1h"
+        elif buffer_minutes <= 120:
+            time_window = "2h"
+        elif buffer_minutes <= 180:
+            time_window = "3h"
+        elif buffer_minutes <= 360:
+            time_window = "6h"
+        elif buffer_minutes <= 720:
+            time_window = "12h"
+        elif buffer_minutes <= 1440:
+            time_window = "24h"
+        else:
+            time_window = "24h"  # Default to 24h for longer periods
+        
         refresh_time = int(time.time() * 1000)  # Current timestamp in milliseconds
         
         # Build the CubeAPM URL
