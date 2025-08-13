@@ -188,9 +188,10 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
                 start_epoch = int(first_time.timestamp())
                 end_epoch = int(last_time.timestamp())
                 
-                # Add minimal buffer time (30 seconds before and after) for better visibility
-                start_epoch -= 30  # 30 seconds before
-                end_epoch += 30    # 30 seconds after
+                # Use exact error occurrence time with NO buffer for ultra-targeting
+                # This ensures only the specific error is shown
+                # start_epoch = start_epoch  # No buffer
+                # end_epoch = end_epoch      # No buffer
                 
             except Exception as e:
                 print(f"Error parsing error occurrence times: {e}")
