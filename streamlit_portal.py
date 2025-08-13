@@ -287,10 +287,10 @@ def display_correlation_table(data):
             filtered_df = filtered_df[filtered_df['operation_name'] == operation_filter]
         
         # Create tabs for different views
-        tab1, tab2, tab3 = st.tabs(["Timeline", "JSON View", "Data Table"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Summary", "Timeline", "JSON View", "Data Table"])
         
         with tab1:
-            st.subheader("Event Timeline")
+            st.subheader("📋 Event Summary")
             
             # Show deduplication info
             original_count = len(df)
@@ -298,7 +298,43 @@ def display_correlation_table(data):
             if original_count != filtered_count:
                 st.info(f"📊 **Timeline Summary**: Showing {filtered_count} unique events (deduplicated from {original_count} total events)")
             
-            for idx, row in filtered_df.iterrows():
+            # Group events by service and show summary
+            service_summary = filtered_df.groupby('service_name').agg({
+                'operation_name': 'count',
+                'why': lambda x: '; '.join(set(x.dropna())),
+                'duration': lambda x: '; '.join(set(x.dropna()))
+            }).rename(columns={'operation_name': 'event_count'})
+            
+            st.write("**Service-wise Event Summary:**")
+            st.dataframe(service_summary, use_container_width=True)
+            
+            # Show key error patterns
+            st.write("**🔍 Key Error Patterns:**")
+            error_patterns = filtered_df['why'].value_counts().head(5)
+            for pattern, count in error_patterns.items():
+                if pd.notna(pattern) and pattern.strip():
+                    st.write(f"• **{count} events**: {pattern}")
+            
+            # Show most affected operations
+            st.write("**🎯 Most Affected Operations:**")
+            operation_counts = filtered_df['operation_name'].value_counts().head(5)
+            for operation, count in operation_counts.items():
+                st.write(f"• **{count} events**: {operation}")
+        
+        with tab2:
+            st.subheader("Event Timeline")
+            
+            # Add event limit slider for better performance
+            max_events = st.slider("Maximum events to display", 5, 50, 15, help="Limit the number of events shown to improve performance")
+            
+            # Show only the most recent events or limit by count
+            if len(filtered_df) > max_events:
+                st.warning(f"⚠️ Showing only the first {max_events} events out of {len(filtered_df)} total events. Use the slider above to adjust.")
+                display_df = filtered_df.head(max_events)
+            else:
+                display_df = filtered_df
+            
+            for idx, row in display_df.iterrows():
                 with st.expander(f"Event {idx+1}: {row['timestamp']} - {row['operation_name']}"):
                     col1, col2 = st.columns(2)
                     with col1:
