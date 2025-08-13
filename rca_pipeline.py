@@ -1835,42 +1835,21 @@ Latest Encountered: {last_time_display}
         }]
     }
     
+    # Prepare buttons for the card
+    buttons = [
+        {
+            "text": "📊 View RCA Portal",
+            "onClick": {"openLink": {"url": web_url}}
+        }
+    ]
+    
     # Add CubeAPM link if available
     cubeapm_link = card.get('cubeapm_link')
     if cubeapm_link:
-        # Create a separate card for CubeAPM link
-        cubeapm_payload = {
-            "cardsV2": [{
-                "cardId": "cubeapmCard",
-                "card": {
-                    "header": {"title": "🔍 CubeAPM Link"},
-                    "sections": [
-                        {
-                            "widgets": [
-                                {
-                                    "buttonList": {
-                                        "buttons": [{
-                                            "text": "🔍 Open in CubeAPM",
-                                            "onClick": {"openLink": {"url": cubeapm_link}}
-                                        }]
-                                    }
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }]
-        }
-        
-        # Send CubeAPM card
-        try:
-            r = requests.post(GOOGLE_CHAT_WEBHOOK, json=cubeapm_payload, timeout=10)
-            if r.status_code == 200:
-                print(f"[✓] Sent CubeAPM link to Google Chat for {service_name}")
-            else:
-                print(f"[WARN] CubeAPM card send failed: {r.status_code} {r.text}")
-        except Exception as e:
-            print(f"[ERR] Exception in CubeAPM card send: {e}")
+        buttons.append({
+            "text": "🔍 Open in CubeAPM",
+            "onClick": {"openLink": {"url": cubeapm_link}}
+        })
     
     main_payload = {
         "cardsV2": [{
@@ -1887,12 +1866,7 @@ Latest Encountered: {last_time_display}
                         "widgets": [
                             {
                                 "buttonList": {
-                                    "buttons": [
-                                        {
-                                            "text": "📊 View RCA Portal",
-                                            "onClick": {"openLink": {"url": web_url}}
-                                        }
-                                    ]
+                                    "buttons": buttons
                                 }
                             }
                         ]
