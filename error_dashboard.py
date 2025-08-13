@@ -423,18 +423,6 @@ def create_error_summary_table(filtered_data, historical_data):
                         st.markdown(f"[📊 RCA Report]({report_url})")
                     else:
                         st.markdown("📊 No RCA report")
-                    
-                    # Add CubeAPM link if available
-                    cubeapm_link = None
-                    for error_data in filtered_data:
-                        if error_data.get('error_dir') == error_dir:
-                            cubeapm_link = error_data.get('cubeapm_link')
-                            break
-                    
-                    if cubeapm_link:
-                        st.markdown(f"[🔍 CubeAPM]({cubeapm_link})")
-                    else:
-                        st.markdown("🔍 No CubeAPM link")
             else:
                 st.markdown(f"<div class='new-error'>🆕 {error_type}</div>", unsafe_allow_html=True)
         
@@ -471,19 +459,6 @@ def create_error_summary_table(filtered_data, historical_data):
                 st.markdown(f"[📊 RCA Report]({report_url})")
             else:
                 st.markdown("📊 No RCA report")
-            
-            # Add CubeAPM link if available
-            # We need to get the cubeapm_link from the original error data
-            cubeapm_link = None
-            for error in filtered_data:
-                if error.get('error_dir') == error_dir:
-                    cubeapm_link = error.get('cubeapm_link')
-                    break
-            
-            if cubeapm_link:
-                st.markdown(f"[🔍 CubeAPM]({cubeapm_link})")
-            else:
-                st.markdown("🔍 No CubeAPM link")
         
         with col3:
             # Add status indicator based on category
@@ -767,18 +742,6 @@ def create_error_details_table(filtered_data):
                     st.markdown(f"[📊 RCA Report]({report_url})")
                 else:
                     st.markdown("📊 No RCA report")
-                
-                # Add CubeAPM link if available
-                cubeapm_link = None
-                for error_data in filtered_data:
-                    if error_data.get('error_dir') == error_dir:
-                        cubeapm_link = error_data.get('cubeapm_link')
-                        break
-                
-                if cubeapm_link:
-                    st.markdown(f"[🔍 CubeAPM]({cubeapm_link})")
-                else:
-                    st.markdown("🔍 No CubeAPM link")
             
             with col3:
                 # Add status indicator
