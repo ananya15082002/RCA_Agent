@@ -144,6 +144,99 @@ def generate_cubeapm_link(card, start_epoch, end_epoch):
         print(f"[WARN] Error generating CubeAPM link: {e}")
         return None
 
+def generate_cubeapm_link_from_error_times(card, first_encountered, last_encountered):
+    """Generate CubeAPM link using actual error occurrence times from error card"""
+    try:
+        # Extract parameters from error card
+        env = card.get('env', 'Unknown')
+        service = card.get('service', 'Unknown')
+        http_code = card.get('http_code', 'Unknown')
+        exception = card.get('exception', 'Unknown Error')
+        root_name = card.get('root_name', 'Unknown')
+        
+        # Generate a unique alert ID
+        alert_id_base = f"{service}_{http_code}_{exception}_{int(time.time())}"
+        alert_id = int(hashlib.md5(alert_id_base.encode()).hexdigest()[:16], 16)
+        
+        # Parse the actual error occurrence times
+        start_epoch = None
+        end_epoch = None
+        
+        if first_encountered and last_encountered:
+            try:
+                # Parse first encountered time
+                if isinstance(first_encountered, str):
+                    if 'IST' in first_encountered:
+                        first_time = datetime.strptime(first_encountered.replace(' IST', ''), '%Y-%m-%d %H:%M:%S')
+                        first_time = IST.localize(first_time)
+                    else:
+                        first_time = datetime.fromisoformat(first_encountered.replace('Z', '+00:00'))
+                else:
+                    first_time = first_encountered
+                
+                # Parse last encountered time
+                if isinstance(last_encountered, str):
+                    if 'IST' in last_encountered:
+                        last_time = datetime.strptime(last_encountered.replace(' IST', ''), '%Y-%m-%d %H:%M:%S')
+                        last_time = IST.localize(last_time)
+                    else:
+                        last_time = datetime.fromisoformat(last_encountered.replace('Z', '+00:00'))
+                else:
+                    last_time = last_encountered
+                
+                # Convert to epoch timestamps
+                start_epoch = int(first_time.timestamp())
+                end_epoch = int(last_time.timestamp())
+                
+                # Add minimal buffer time (30 seconds before and after) for better visibility
+                start_epoch -= 30  # 30 seconds before
+                end_epoch += 30    # 30 seconds after
+                
+            except Exception as e:
+                print(f"Error parsing error occurrence times: {e}")
+                return None
+        else:
+            return None
+        
+        # Calculate time parameters
+        refresh_time = int(time.time() * 1000)  # Current timestamp in milliseconds
+        
+        # URL encode the endpoint and category for better targeting
+        import urllib.parse
+        encoded_endpoint = urllib.parse.quote(root_name) if root_name != 'Unknown' else ''
+        encoded_category = urllib.parse.quote(exception) if exception != 'Unknown Error' else ''
+        
+        # Build the CubeAPM URL with exact timestamps
+        base_url = "https://observability-prod.fxtrt.io/apm"
+        
+        # URL parameters - using exact start and end timestamps with targeting
+        params = {
+            'alert_id': str(alert_id),
+            'start': str(start_epoch),
+            'end': str(end_epoch),
+            'refresh': str(refresh_time),
+            'tab': 'errors',
+            'section': '',
+            'section2': '',
+            'env': env,
+            'service': service,
+            'endpoint': encoded_endpoint,
+            'category': encoded_category,
+            'host': '',
+            'sv': '',
+            'http_code': http_code  # Add HTTP code for specific filtering
+        }
+        
+        # Build query string
+        query_string = '&'.join([f"{k}={v}" for k, v in params.items() if v])
+        cubeapm_url = f"{base_url}?{query_string}"
+        
+        return cubeapm_url
+        
+    except Exception as e:
+        print(f"[WARN] Error generating CubeAPM link from error times: {e}")
+        return None
+
 def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     """
     Fetch error metrics for UNSET environment services with 5xx HTTP codes and ERROR status codes.
@@ -219,13 +312,13 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
                     }
                     
                     # Generate CubeAPM link for this error
-                    # Use the actual error occurrence time window (with buffer)
+                    # Use the actual error occurrence time window (with minimal buffer)
                     error_start_epoch = start_epoch
                     error_end_epoch = end_epoch
                     
-                    # Add buffer time (2 minutes before and after) for better visibility
-                    error_start_epoch -= 120  # 2 minutes before
-                    error_end_epoch += 120    # 2 minutes after
+                    # Add minimal buffer time (30 seconds before and after) for better visibility
+                    error_start_epoch -= 30  # 30 seconds before
+                    error_end_epoch += 30    # 30 seconds after
                     
                     cubeapm_link = generate_cubeapm_link(error_card, error_start_epoch, error_end_epoch)
                     if cubeapm_link:
@@ -2085,6 +2178,13 @@ def run_window(window_start_dt, window_end_dt):
         # Step 7: Update error card with actual first/last encountered times
         card['first_encountered'] = first_time
         card['last_encountered'] = last_time
+        
+        # Step 7.5: Generate CubeAPM link using actual error occurrence times
+        if first_time and last_time:
+            cubeapm_link = generate_cubeapm_link_from_error_times(card, first_time, last_time)
+            if cubeapm_link:
+                card['cubeapm_link'] = cubeapm_link
+                print(f"[✓] Generated CubeAPM link with actual error times: {first_time} to {last_time}")
         
         # Save updated error card
         save_json(card, os.path.join(card_dir, "error_card.json"))
