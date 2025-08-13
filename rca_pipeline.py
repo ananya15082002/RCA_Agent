@@ -324,6 +324,9 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
                     cubeapm_link = generate_cubeapm_link(error_card, error_start_epoch, error_end_epoch)
                     if cubeapm_link:
                         error_card["cubeapm_link"] = cubeapm_link
+                    
+                    # Update count from correlation timeline for more accurate counting
+                    # This will be done later when we process the error directory
                     all_error_cards.append(error_card)
                     
         except Exception as e:
@@ -2107,6 +2110,40 @@ Keep it concise and factual.
 """
     return prompt
 
+def update_error_count_from_timeline(error_dir, error_card):
+    """Update error count from correlation timeline for more accurate counting"""
+    try:
+        corr_timeline_path = os.path.join(error_dir, "correlation_timeline.csv")
+        if not os.path.exists(corr_timeline_path):
+            return error_card
+        
+        # Count errors from correlation timeline
+        import csv
+        error_count = 0
+        
+        with open(corr_timeline_path, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Check if this row matches our error criteria
+                service_name = row.get('service_name', '')
+                operation_name = row.get('operation_name', '')
+                
+                # Match based on service and operation name
+                if (service_name == error_card.get('service', '') and 
+                    operation_name == error_card.get('root_name', '')):
+                    error_count += 1
+        
+        # Update the count if we found errors in timeline
+        if error_count > 0:
+            error_card['count'] = float(error_count)
+            print(f"[INFO] Updated error count from timeline: {error_count} for {error_card.get('service')} - {error_card.get('root_name')}")
+        
+        return error_card
+        
+    except Exception as e:
+        print(f"[WARN] Error updating count from timeline: {e}")
+        return error_card
+
 def run_window(window_start_dt, window_end_dt):
     start_epoch = to_epoch(window_start_dt)
     end_epoch = to_epoch(window_end_dt)
@@ -2161,6 +2198,9 @@ def run_window(window_start_dt, window_end_dt):
 
         # Step 3: Correlation Table
         correlation_summary, correlation_timeline = build_correlation_timeline(card, all_span_meta, all_log_meta, card_dir)
+        
+        # Step 3.5: Update error count from correlation timeline for accurate counting
+        card = update_error_count_from_timeline(card_dir, card)
 
         # Step 4: Generate Detailed RCA using Cursor as LLM
         rca_summary = generate_detailed_rca(card, correlation_timeline, all_span_meta, all_log_meta)
