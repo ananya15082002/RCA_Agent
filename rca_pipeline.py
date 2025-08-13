@@ -1901,10 +1901,6 @@ Latest Encountered: {last_time_display}
             }
         }]
     }
-                ]
-            }
-        }]
-    }
     
     # Send main card
     try:
