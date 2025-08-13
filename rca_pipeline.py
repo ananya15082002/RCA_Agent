@@ -1835,7 +1835,7 @@ Latest Encountered: {last_time_display}
         }]
     }
     
-    # Prepare buttons for the card
+    # Prepare buttons for the main card
     buttons = [
         {
             "text": "📊 View RCA Portal",
