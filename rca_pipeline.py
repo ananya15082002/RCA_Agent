@@ -1972,11 +1972,18 @@ def run_window(window_start_dt, window_end_dt):
         # Step 6: Extract first/last times
         first_time, last_time = get_first_last_times(all_log_meta, all_span_meta)
 
-        # Step 7: Extract comprehensive evidence and top tags
+        # Step 7: Update error card with actual first/last encountered times
+        card['first_encountered'] = first_time
+        card['last_encountered'] = last_time
+        
+        # Save updated error card
+        save_json(card, os.path.join(card_dir, "error_card.json"))
+
+        # Step 8: Extract comprehensive evidence and top tags
         evidence_data = extract_comprehensive_evidence(all_span_meta, all_log_meta, card)
         tags = extract_top_tags(all_span_meta)
 
-        # Step 8: Google Chat alert with enhanced data
+        # Step 9: Google Chat alert with enhanced data
         timeline_csv_path = os.path.join(card_dir, "correlation_timeline.csv")
         send_to_google_chat(card, card_dir, first_time, last_time, tags, timeline_csv_path, img_b64, rca_summary)
 

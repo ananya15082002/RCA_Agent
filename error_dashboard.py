@@ -151,9 +151,12 @@ def load_error_data():
             # Extract timestamp from directory name
             dir_name = os.path.basename(error_dir)
             parts = dir_name.split('_')
-            if len(parts) >= 4:
+            if len(parts) >= 5:  # Should have: error_1_2025-08-12_155704_IST
                 date_str = f"{parts[2]}_{parts[3]}"
+                # Parse the timestamp - it's already in IST format from directory name
                 timestamp = datetime.strptime(date_str, "%Y-%m-%d_%H%M%S")
+                # Localize to IST timezone since the directory name indicates IST
+                timestamp = IST.localize(timestamp)
                 
                 # Load error card
                 error_card_path = os.path.join(error_dir, "error_card.json")
@@ -162,8 +165,24 @@ def load_error_data():
                         error_card = json.load(f)
                         error_card['timestamp'] = timestamp
                         error_card['error_dir'] = error_dir
+                        
+                        # Extract first_encountered and last_encountered from error card if available
+                        # These are the actual error occurrence times, not the window times
+                        if 'first_encountered' in error_card:
+                            error_card['first_encountered'] = error_card['first_encountered']
+                        else:
+                            # Use window_start as fallback
+                            error_card['first_encountered'] = error_card.get('window_start', 'Unknown')
+                        
+                        if 'last_encountered' in error_card:
+                            error_card['last_encountered'] = error_card['last_encountered']
+                        else:
+                            # Use window_end as fallback
+                            error_card['last_encountered'] = error_card.get('window_end', 'Unknown')
+                        
                         error_data.append(error_card)
         except Exception as e:
+            print(f"Error loading data from {error_dir}: {e}")
             continue
     
     return error_data
@@ -173,12 +192,12 @@ def get_time_filtered_data(error_data, hours):
     if not error_data:
         return []
     
-    now = datetime.now()
+    now = datetime.now(IST)  # Use IST timezone
     cutoff_time = now - timedelta(hours=hours)
     
     filtered_data = [
         error for error in error_data 
-        if error.get('timestamp', datetime.min) >= cutoff_time
+        if error.get('timestamp', datetime.min.replace(tzinfo=IST)) >= cutoff_time
     ]
     
     return filtered_data
@@ -188,13 +207,13 @@ def get_historical_data(error_data, hours):
     if not error_data:
         return []
     
-    now = datetime.now()
+    now = datetime.now(IST)  # Use IST timezone
     window_start = now - timedelta(hours=hours)
     historical_start = now - timedelta(hours=hours * 2)  # Double the window for historical comparison
     
     historical_data = [
         error for error in error_data 
-        if historical_start <= error.get('timestamp', datetime.min) < window_start
+        if historical_start <= error.get('timestamp', datetime.min.replace(tzinfo=IST)) < window_start
     ]
     
     return historical_data
@@ -222,6 +241,81 @@ def detect_new_errors(current_errors, historical_errors):
     new_errors = current_error_types - historical_error_types
     return new_errors
 
+def get_actual_error_times(error_dir):
+    """Get actual first and last encountered times from correlation timeline"""
+    try:
+        # Load correlation timeline
+        corr_timeline_path = os.path.join(error_dir, "correlation_timeline.csv")
+        if not os.path.exists(corr_timeline_path):
+            return "Unknown", "Unknown"
+        
+        # Read correlation timeline using built-in CSV module
+        import csv
+        timestamps = []
+        
+        with open(corr_timeline_path, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                first_enc = row.get('first_encountered', 'Unknown')
+                last_enc = row.get('last_encountered', 'Unknown')
+                
+                if first_enc and first_enc != 'Unknown':
+                    timestamps.append(first_enc)
+                if last_enc and last_enc != 'Unknown':
+                    timestamps.append(last_enc)
+        
+        if not timestamps:
+            return "Unknown", "Unknown"
+        
+        # Parse timestamps and find min/max
+        parsed_times = []
+        for ts in timestamps:
+            try:
+                if 'IST' in ts:
+                    ts_clean = ts.replace(' IST', '')
+                elif 'UTC' in ts:
+                    ts_clean = ts.replace(' UTC', '')
+                else:
+                    ts_clean = ts
+                
+                # Try different formats
+                try:
+                    dt = datetime.strptime(ts_clean, '%Y-%m-%d %H:%M:%S.%f')
+                except:
+                    dt = datetime.strptime(ts_clean, '%Y-%m-%d %H:%M:%S')
+                
+                parsed_times.append(dt)
+            except Exception:
+                continue
+        
+        if parsed_times:
+            # Convert to IST and format
+            try:
+                first_dt = min(parsed_times)
+                last_dt = max(parsed_times)
+                
+                # Localize to IST if no timezone info
+                if first_dt.tzinfo is None:
+                    first_dt = IST.localize(first_dt)
+                if last_dt.tzinfo is None:
+                    last_dt = IST.localize(last_dt)
+                
+                first_encountered = first_dt.strftime('%Y-%m-%d %H:%M:%S IST')
+                last_encountered = last_dt.strftime('%Y-%m-%d %H:%M:%S IST')
+                
+                return first_encountered, last_encountered
+            except Exception:
+                # Fallback to simple formatting
+                first_encountered = min(parsed_times).strftime('%Y-%m-%d %H:%M:%S')
+                last_encountered = max(parsed_times).strftime('%Y-%m-%d %H:%M:%S')
+                return first_encountered, last_encountered
+        
+        return "Unknown", "Unknown"
+        
+    except Exception as e:
+        print(f"Error getting actual error times from {error_dir}: {e}")
+        return "Unknown", "Unknown"
+
 def create_error_summary_table(filtered_data, historical_data):
     """Create comprehensive error summary table with View Report buttons"""
     if not filtered_data:
@@ -241,12 +335,46 @@ def create_error_summary_table(filtered_data, historical_data):
     for error_type, errors in error_groups.items():
         # Calculate metrics
         total_count = sum(error.get('count', 0) for error in errors)
-        first_encountered = min(error.get('timestamp', datetime.max) for error in errors)
-        last_encountered = max(error.get('timestamp', datetime.min) for error in errors)
         
         # Get the most recent error directory for report link
         most_recent_error = max(errors, key=lambda x: x.get('timestamp', datetime.min))
         error_dir = most_recent_error.get('error_dir', '')
+        
+        # Try to get actual first and last encountered times from correlation timeline
+        first_encountered_str, last_encountered_str = get_actual_error_times(error_dir)
+        
+        # If correlation timeline doesn't have the data, fall back to timestamp-based calculation
+        if first_encountered_str == "Unknown" or last_encountered_str == "Unknown":
+            error_timestamps = []
+            
+            for error in errors:
+                # Get the timestamp from the error (this is the actual error occurrence time)
+                timestamp = error.get('timestamp')
+                if timestamp:
+                    error_timestamps.append(timestamp)
+            
+            # Calculate first and last encountered times from actual timestamps
+            if error_timestamps:
+                first_encountered = min(error_timestamps)
+                last_encountered = max(error_timestamps)
+                
+                # Convert to IST for display
+                first_encountered_str = first_encountered.astimezone(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+                last_encountered_str = last_encountered.astimezone(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+            else:
+                # Fallback to window times if no actual timestamps
+                first_encountered_str = "Unknown"
+                last_encountered_str = "Unknown"
+                
+                # Try to get from error card data
+                for error in errors:
+                    first_enc = error.get('first_encountered', 'Unknown')
+                    last_enc = error.get('last_encountered', 'Unknown')
+                    
+                    if first_enc != 'Unknown' and first_encountered_str == "Unknown":
+                        first_encountered_str = first_enc
+                    if last_enc != 'Unknown' and last_encountered_str == "Unknown":
+                        last_encountered_str = last_enc
         
         # Determine error category
         if total_count > 10:  # High frequency
@@ -256,15 +384,11 @@ def create_error_summary_table(filtered_data, historical_data):
         else:
             category = "🟢 Low Frequency"
         
-        # Convert to IST for display
-        first_ist = first_encountered.astimezone(IST).strftime('%Y-%m-%d %H:%M:%S IST')
-        last_ist = last_encountered.astimezone(IST).strftime('%Y-%m-%d %H:%M:%S IST')
-        
         summary_data.append({
             'Error Type': error_type,
             'Count': total_count,
-            'First Encountered': first_ist,
-            'Last Encountered': last_ist,
+            'First Encountered': first_encountered_str,
+            'Last Encountered': last_encountered_str,
             'Category': category,
             'Error Directory': error_dir
         })
@@ -556,14 +680,32 @@ def create_error_details_table(filtered_data):
     error_rows = []
     for error in filtered_data:
         # Extract service name from error card
-        service_name = error.get('service_name', 'Unknown')
+        service_name = error.get('service', 'Unknown')
         
         # Extract error count
-        error_count = error.get('error_count', 0)
+        error_count = error.get('count', 0)
         
-        # Extract first and last encountered times
-        first_encountered = error.get('first_encountered', 'Unknown')
-        last_encountered = error.get('last_encountered', 'Unknown')
+        # Try to get actual first and last encountered times from correlation timeline
+        error_dir = error.get('error_dir', '')
+        first_encountered, last_encountered = get_actual_error_times(error_dir)
+        
+        # If correlation timeline doesn't have the data, fall back to timestamp-based calculation
+        if first_encountered == "Unknown" or last_encountered == "Unknown":
+            timestamp = error.get('timestamp')
+            if timestamp:
+                # Use the actual error occurrence time
+                first_encountered = timestamp.astimezone(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+                last_encountered = timestamp.astimezone(IST).strftime('%Y-%m-%d %H:%M:%S IST')
+            else:
+                # Fallback to stored values
+                first_encountered = error.get('first_encountered', 'Unknown')
+                last_encountered = error.get('last_encountered', 'Unknown')
+                
+                # If still not available, use window times
+                if first_encountered == 'Unknown':
+                    first_encountered = error.get('window_start', 'Unknown')
+                if last_encountered == 'Unknown':
+                    last_encountered = error.get('window_end', 'Unknown')
         
         # Extract error directory for report link
         error_dir = error.get('error_dir', '')
@@ -571,8 +713,8 @@ def create_error_details_table(filtered_data):
         error_rows.append({
             'Service': service_name,
             'Error Count': error_count,
-            'First Encountered': format_timestamp_to_ist(first_encountered),
-            'Last Encountered': format_timestamp_to_ist(last_encountered),
+            'First Encountered': first_encountered,
+            'Last Encountered': last_encountered,
             'Error Directory': error_dir
         })
     
@@ -705,7 +847,7 @@ def main():
     historical_data = get_historical_data(error_data, hours)
     
     # Display last update time
-    st.sidebar.write(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S IST')}")
+    st.sidebar.write(f"Last updated: {datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S IST')}")
     
     # Create dashboard sections
     create_metrics_dashboard(filtered_data, hours)
@@ -731,8 +873,8 @@ def main():
             
             st.write("**Latest Errors:**")
             for error in recent_errors:
-                timestamp = error.get('timestamp', datetime.now())
-                time_ago = datetime.now() - timestamp
+                timestamp = error.get('timestamp', datetime.now(IST))
+                time_ago = datetime.now(IST) - timestamp
                 
                 if time_ago.total_seconds() < 300:  # Less than 5 minutes
                     status = "🟢"
