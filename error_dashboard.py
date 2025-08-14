@@ -647,43 +647,36 @@ def create_error_summary_table(filtered_data, historical_data):
         st.markdown("---")
     
     # Show category breakdown with improved visibility - ONLY ONCE
-    # Use session state to prevent duplication
-    if 'category_breakdown_shown' not in st.session_state:
-        st.session_state.category_breakdown_shown = False
+    # Use a simpler approach to prevent duplication
+    st.subheader("📈 **Error Category Breakdown**")
+    col1, col2, col3 = st.columns(3)
     
-    if not st.session_state.category_breakdown_shown:
-        st.subheader("📈 **Error Category Breakdown**")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            frequent_count = len([x for x in summary_data if '🔴' in x['Category']])
-            st.markdown(f"""
-            <div class="metric-card" style="background: linear-gradient(135deg, #dc3545, #c82333) !important; color: white !important;">
-                <div class="metric-value" style="color: white !important;">{frequent_count}</div>
-                <div class="metric-label" style="color: rgba(255,255,255,0.9) !important;">🔴 Frequent Spikes</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            existing_count = len([x for x in summary_data if '🟠' in x['Category']])
-            st.markdown(f"""
-            <div class="metric-card" style="background: linear-gradient(135deg, #ffc107, #e0a800) !important; color: white !important;">
-                <div class="metric-value" style="color: white !important;">{existing_count}</div>
-                <div class="metric-label" style="color: rgba(255,255,255,0.9) !important;">🟠 Existing Errors</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            new_count = len(new_errors)
-            st.markdown(f"""
-            <div class="metric-card" style="background: linear-gradient(135deg, #007bff, #0056b3) !important; color: white !important;">
-                <div class="metric-value" style="color: white !important;">{new_count}</div>
-                <div class="metric-label" style="color: rgba(255,255,255,0.9) !important;">🆕 New Errors</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Mark as shown
-        st.session_state.category_breakdown_shown = True
+    with col1:
+        frequent_count = len([x for x in summary_data if '🔴' in x['Category']])
+        st.markdown(f"""
+        <div class="metric-card" style="background: linear-gradient(135deg, #dc3545, #c82333) !important; color: white !important;">
+            <div class="metric-value" style="color: white !important;">{frequent_count}</div>
+            <div class="metric-label" style="color: rgba(255,255,255,0.9) !important;">🔴 Frequent Spikes</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        existing_count = len([x for x in summary_data if '🟠' in x['Category']])
+        st.markdown(f"""
+        <div class="metric-card" style="background: linear-gradient(135deg, #ffc107, #e0a800) !important; color: white !important;">
+            <div class="metric-value" style="color: white !important;">{existing_count}</div>
+            <div class="metric-label" style="color: rgba(255,255,255,0.9) !important;">🟠 Existing Errors</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        new_count = len(new_errors)
+        st.markdown(f"""
+        <div class="metric-card" style="background: linear-gradient(135deg, #007bff, #0056b3) !important; color: white !important;">
+            <div class="metric-value" style="color: white !important;">{new_count}</div>
+            <div class="metric-label" style="color: rgba(255,255,255,0.9) !important;">🆕 New Errors</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 def create_metrics_dashboard(filtered_data, hours, theme_mode="Light"):
     """Create metrics dashboard"""
