@@ -267,20 +267,20 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     # Create service filter for target services
     service_filter = '|'.join(TARGET_SERVICES)
     
-    # Query 1: 5xx errors EXCEPT 500 (501, 502, 503, etc.)
-    query1 = f'''
-    sum by (env,service,root_name,http_code,exception,span_kind) (
-        increase(cube_apm_calls_total{{
-            env="{UNSET_ENVIRONMENT}",
-            service=~"({service_filter})",
-            span_kind=~"server|consumer",
-            http_code=~"5..",
-            http_code!="500"
-        }}[{WINDOW_MINUTES}m])
-    )
-    '''
+    # Query 1: 5xx errors EXCEPT 500 (501, 502, 503, etc.) - COMMENTED OUT
+    # query1 = f'''
+    # sum by (env,service,root_name,http_code,exception,span_kind) (
+    #     increase(cube_apm_calls_total{{
+    #         env="{UNSET_ENVIRONMENT}",
+    #         service=~"({service_filter})",
+    #         span_kind=~"server|consumer",
+    #         http_code=~"5..",
+    #         http_code!="500"
+    #     }}[{WINDOW_MINUTES}m])
+    # )
+    # '''
     
-    # Query 2: 5xx errors EXCEPT 500 for other environments (excluding specific ones)
+    # Query 2: 5xx errors EXCEPT 500 for all environments (excluding specific ones)
     query2 = f'''
     sum by (env,service,root_name,http_code,exception,span_kind) (
         increase(cube_apm_calls_total{{
@@ -292,7 +292,7 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     )
     '''
     
-    queries = [query1, query2]
+    queries = [query2]  # Only use query2
     
     for i, query in enumerate(queries):
         try:
@@ -2272,8 +2272,8 @@ def save_last_processed_time(epoch_ts):
         f.write(str(epoch_ts))
 
 def main_loop():
-    print("[START] Comprehensive Error RCA System - Monitoring UNSET environment services for 5xx errors")
-    print(f"[INFO] Target services: {', '.join(TARGET_SERVICES[:5])}... and {len(TARGET_SERVICES)-5} more")
+    print("[START] Comprehensive Error RCA System - Monitoring all environments (except excluded) for 5xx errors")
+    print(f"[INFO] Monitoring all services across environments (excluding fxtrt-shared-prod and fxtrt-devportal-prod)")
     
     while True:
         try:
