@@ -333,14 +333,24 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
             result = r.json()
             
             for m in result.get("data", {}).get("result", []):
-                count = float(m["values"][-1][1])
-                if count > 0:
+                # The increase() function returns rate, not actual count
+                # We need to calculate the actual count from the rate
+                rate_value = float(m["values"][-1][1])
+                
+                # Convert rate to actual count for the time window
+                # increase() over 5 minutes = rate * 5 minutes
+                actual_count = rate_value
+                
+                if actual_count > 0:
                     # Get service and environment
                     service = m["metric"].get("service", "Unknown")
                     env = m["metric"].get("env", "Unknown")
                     
-                    # Debug: Log all detected errors
-                    print(f"[DEBUG] Detected error - Service: {service}, Env: {env}, HTTP: {m['metric'].get('http_code')}, Count: {count}")
+                    # Debug: Log all detected errors with both rate and count
+                    print(f"[DEBUG] Detected error - Service: {service}, Env: {env}, HTTP: {m['metric'].get('http_code')}, Rate: {rate_value}, Count: {actual_count}")
+                    
+                    # Also log the raw values for debugging
+                    print(f"[DEBUG] Raw values: {m['values']}")
                     
                     # Handle http_code - if it's NA or missing, set to "ERROR"
                     http_code = m["metric"].get("http_code", "ERROR")
@@ -354,7 +364,7 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
                         "http_code": http_code,
                         "exception": m["metric"].get("exception", "Unknown Error"),
                         "root_name": m["metric"].get("root_name", "Unknown"),
-                        "count": count,
+                        "count": actual_count,
             "window_start": start_str,
             "window_end": end_str,
             "values": m["values"]
@@ -2168,6 +2178,7 @@ def update_error_count_from_timeline(error_dir, error_card):
         # Count errors from correlation timeline
         import csv
         error_count = 0
+        http_code = error_card.get('http_code', '')
         
         with open(corr_timeline_path, 'r') as f:
             reader = csv.DictReader(f)
@@ -2175,16 +2186,21 @@ def update_error_count_from_timeline(error_dir, error_card):
                 # Check if this row matches our error criteria
                 service_name = row.get('service_name', '')
                 operation_name = row.get('operation_name', '')
+                row_http_code = row.get('http_code', '')
                 
-                # Match based on service and operation name
+                # Match based on service, operation name, and HTTP code for accuracy
                 if (service_name == error_card.get('service', '') and 
-                    operation_name == error_card.get('root_name', '')):
+                    operation_name == error_card.get('root_name', '') and
+                    row_http_code == http_code):
                     error_count += 1
         
         # Update the count if we found errors in timeline
         if error_count > 0:
+            original_count = error_card.get('count', 0)
             error_card['count'] = float(error_count)
-            print(f"[INFO] Updated error count from timeline: {error_count} for {error_card.get('service')} - {error_card.get('root_name')}")
+            print(f"[INFO] Updated error count from timeline: {original_count} -> {error_count} for {error_card.get('service')} - {error_card.get('root_name')} ({http_code})")
+        else:
+            print(f"[WARN] No matching errors found in timeline for {error_card.get('service')} - {error_card.get('root_name')} ({http_code})")
         
         return error_card
         
