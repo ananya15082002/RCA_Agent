@@ -219,8 +219,17 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
                 final_end_epoch = end_epoch + buffer_after
                 
                 # Convert to ISO format for CubeAPM time parameter using UTC times
-                final_start_iso = datetime.fromtimestamp(final_start_epoch, tz=pytz.UTC).strftime('%Y-%m-%dT%H:%M:%S.000Z')
-                final_end_iso = datetime.fromtimestamp(final_end_epoch, tz=pytz.UTC).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+                # Round to nearest minute for better CubeAPM compatibility
+                final_start_dt = datetime.fromtimestamp(final_start_epoch, tz=pytz.UTC)
+                final_end_dt = datetime.fromtimestamp(final_end_epoch, tz=pytz.UTC)
+                
+                # Round start time down to the minute
+                final_start_rounded = final_start_dt.replace(second=0, microsecond=0)
+                # Round end time up to the minute
+                final_end_rounded = final_end_dt.replace(second=0, microsecond=0) + timedelta(minutes=1)
+                
+                final_start_iso = final_start_rounded.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+                final_end_iso = final_end_rounded.strftime('%Y-%m-%dT%H:%M:%S.000Z')
                 
                 # Create time parameter in the format CubeAPM expects
                 time_param = f"{final_start_iso}~{final_end_iso}"
@@ -294,9 +303,10 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     # '''
     
     # Query 2: 5xx errors EXCEPT 500 for all environments (excluding specific ones)
+    # Use count_over_time to get actual counts instead of rates
     query2 = f'''
     sum by (env,service,root_name,http_code,exception,span_kind) (
-        increase(cube_apm_calls_total{{
+        count_over_time(cube_apm_calls_total{{
             span_kind=~"server|consumer",
             env!~"fxtrt-shared-prod|fxtrt-devportal-prod",
             http_code=~"5..",
@@ -308,7 +318,7 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     # Query 3: Additional query to catch any missing 5xx errors with different grouping
     query3 = f'''
     sum by (env,service,root_name,http_code,exception) (
-        increase(cube_apm_calls_total{{
+        count_over_time(cube_apm_calls_total{{
             span_kind=~"server|consumer",
             env!~"fxtrt-shared-prod|fxtrt-devportal-prod",
             http_code=~"5..",
@@ -333,21 +343,16 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
             result = r.json()
             
             for m in result.get("data", {}).get("result", []):
-                # The increase() function returns rate, not actual count
-                # We need to calculate the actual count from the rate
-                rate_value = float(m["values"][-1][1])
-                
-                # Convert rate to actual count for the time window
-                # increase() over 5 minutes = rate * 5 minutes
-                actual_count = rate_value
+                # The count_over_time() function returns actual count, not rate
+                actual_count = float(m["values"][-1][1])
                 
                 if actual_count > 0:
                     # Get service and environment
                     service = m["metric"].get("service", "Unknown")
                     env = m["metric"].get("env", "Unknown")
                     
-                    # Debug: Log all detected errors with both rate and count
-                    print(f"[DEBUG] Detected error - Service: {service}, Env: {env}, HTTP: {m['metric'].get('http_code')}, Rate: {rate_value}, Count: {actual_count}")
+                    # Debug: Log all detected errors
+                    print(f"[DEBUG] Detected error - Service: {service}, Env: {env}, HTTP: {m['metric'].get('http_code')}, Count: {actual_count}")
                     
                     # Also log the raw values for debugging
                     print(f"[DEBUG] Raw values: {m['values']}")
