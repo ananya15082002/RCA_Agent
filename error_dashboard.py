@@ -627,7 +627,7 @@ def create_error_summary_table(filtered_data, historical_data):
         new_count = len(new_errors)
         st.metric("🆕 New Errors", new_count)
 
-def create_metrics_dashboard(filtered_data, hours):
+def create_metrics_dashboard(filtered_data, hours, theme_mode="Light"):
     """Create metrics dashboard"""
     if not filtered_data:
         return
@@ -1028,7 +1028,7 @@ def main():
     st.sidebar.write(f"Last updated: {datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S IST')}")
     
     # Create dashboard sections
-    create_metrics_dashboard(filtered_data, hours)
+    create_metrics_dashboard(filtered_data, hours, theme_mode)
     
     # Tabs for different views
     tab1, tab2, tab3, tab4 = st.tabs(["Error Summary", "Error Details", "Service Analytics", "Real-time Monitor"])
