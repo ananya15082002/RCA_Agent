@@ -184,9 +184,22 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
                 else:
                     last_time = last_encountered
                 
-                # Convert to epoch timestamps
-                start_epoch = int(first_time.timestamp())
-                end_epoch = int(last_time.timestamp())
+                # Convert to epoch timestamps (ensure proper timezone handling)
+                if isinstance(first_time, datetime):
+                    if first_time.tzinfo is None:
+                        # If no timezone info, assume IST and convert to UTC
+                        first_time = IST.localize(first_time)
+                    start_epoch = int(first_time.astimezone(pytz.UTC).timestamp())
+                else:
+                    start_epoch = int(first_time.timestamp())
+                
+                if isinstance(last_time, datetime):
+                    if last_time.tzinfo is None:
+                        # If no timezone info, assume IST and convert to UTC
+                        last_time = IST.localize(last_time)
+                    end_epoch = int(last_time.astimezone(pytz.UTC).timestamp())
+                else:
+                    end_epoch = int(last_time.timestamp())
                 
                 # Calculate exact 5-minute window using error card timestamps
                 error_duration = end_epoch - start_epoch
@@ -278,6 +291,7 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     # '''
     
     # Query 2: 5xx errors EXCEPT 500 for all environments (excluding specific ones)
+    # This will catch 502, 503, 504, 505, 506, 507, 508, 509, 510, 511
     query2 = f'''
     sum by (env,service,root_name,http_code,exception,span_kind) (
         increase(cube_apm_calls_total{{
@@ -305,8 +319,12 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
             result = r.json()
             
             for m in result.get("data", {}).get("result", []):
-                count = float(m["values"][-1][1])
-                if count > 0:
+                # Calculate total count across all time points in the window
+                total_count = 0
+                for timestamp, value in m["values"]:
+                    total_count += float(value)
+                
+                if total_count > 0:
                     # Get service and environment
                     service = m["metric"].get("service", "Unknown")
                     env = m["metric"].get("env", "Unknown")
@@ -319,15 +337,15 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
                     error_card = {
                         "env": env,
                         "service": service,
-            "span_kind": m["metric"].get("span_kind"),
+                        "span_kind": m["metric"].get("span_kind"),
                         "http_code": http_code,
                         "exception": m["metric"].get("exception", "Unknown Error"),
                         "root_name": m["metric"].get("root_name", "Unknown"),
-                        "count": count,
-            "window_start": start_str,
-            "window_end": end_str,
-            "values": m["values"]
-        }
+                        "count": total_count,
+                        "window_start": start_str,
+                        "window_end": end_str,
+                        "values": m["values"]
+                    }
                     
                     # Generate CubeAPM link for this error
                     # Use the actual error occurrence time window (with minimal buffer)
