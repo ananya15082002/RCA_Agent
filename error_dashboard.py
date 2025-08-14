@@ -1075,7 +1075,7 @@ def main():
         st.sidebar.write(f"Using preset: {selected_time}")
     
     # Auto-refresh
-    auto_refresh = st.sidebar.checkbox("Auto-refresh every 30 seconds", value=True)
+    auto_refresh = st.sidebar.checkbox("Auto-refresh every 30 seconds", value=False)
     
     if auto_refresh:
         st.sidebar.write("🔄 Auto-refreshing...")
@@ -1145,9 +1145,9 @@ def main():
             st.info("No recent errors found.")
     
     # Auto-refresh logic
-    if auto_refresh:
-        time.sleep(30)
-        st.rerun()
+    # if auto_refresh:
+    #     time.sleep(30)
+    #     st.rerun()
 
 if __name__ == "__main__":
     main() 
