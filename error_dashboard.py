@@ -46,241 +46,99 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for responsive theme styling
+# Custom CSS for dark theme styling
 st.markdown("""
 <style>
-    /* Responsive theme styling */
     .main-header {
         font-size: 2rem;
         font-weight: bold;
+        color: white;
         text-align: left;
         margin-bottom: 1rem;
     }
-    
     .metric-card {
-        background: var(--background-color, #ffffff);
+        background: #2d3748;
         padding: 1rem;
         border-radius: 8px;
+        color: white;
         text-align: center;
         margin: 0.5rem 0;
-        border: 1px solid var(--border-color, #e0e0e0);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid #4a5568;
     }
-    
     .metric-value {
         font-size: 1.5rem;
         font-weight: bold;
-        color: var(--text-color, #000000);
     }
-    
     .metric-label {
         font-size: 0.8rem;
         opacity: 0.8;
-        color: var(--text-color, #000000);
     }
-    
     .service-card {
-        background: var(--background-color, #ffffff);
+        background: #2d3748;
         padding: 1rem;
         border-radius: 8px;
         border-left: 4px solid #4299e1;
         margin: 0.5rem 0;
-        border: 1px solid var(--border-color, #e0e0e0);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        color: white;
     }
-    
     .error-trend {
-        background: var(--background-color, #ffffff);
-        border: 1px solid var(--border-color, #e0e0e0);
+        background: #2d3748;
+        border: 1px solid #4a5568;
         border-radius: 8px;
         padding: 1rem;
         margin: 0.5rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        color: white;
     }
-    
+    .stAlert {
+        background-color: #2d3748;
+        border-color: #4a5568;
+        color: white;
+    }
     .new-error {
         background: #e53e3e;
         color: white;
         padding: 0.5rem;
         border-radius: 5px;
         margin: 0.2rem 0;
-        font-weight: bold;
     }
-    
     .frequent-error {
         background: #dd6b20;
         color: white;
         padding: 0.5rem;
         border-radius: 5px;
         margin: 0.2rem 0;
-        font-weight: bold;
     }
-    
     .existing-error {
         background: #3182ce;
         color: white;
         padding: 0.5rem;
         border-radius: 5px;
         margin: 0.2rem 0;
-        font-weight: bold;
     }
     
-    /* Theme-aware styling */
-    [data-testid="stAppViewContainer"] {
-        background-color: var(--background-color, #ffffff);
+    /* Dark theme for Streamlit */
+    .stApp {
+        background-color: #1a202c;
     }
     
     .stMarkdown {
-        color: var(--text-color, #000000);
+        color: white;
     }
     
     .stSubheader {
-        color: var(--text-color, #000000);
+        color: white;
     }
     
     .stCaption {
-        color: var(--text-color, #666666);
+        color: #a0aec0;
     }
     
     .stInfo {
-        background-color: var(--background-color, #ffffff);
-        color: var(--text-color, #000000);
-        border: 1px solid var(--border-color, #e0e0e0);
-    }
-    
-    /* Dark theme overrides */
-    @media (prefers-color-scheme: dark) {
-        .metric-card {
-            background: #2d3748;
-            border-color: #4a5568;
-            color: white;
-        }
-        
-        .service-card {
-            background: #2d3748;
-            border-color: #4a5568;
-            color: white;
-        }
-        
-        .error-trend {
-            background: #2d3748;
-            border-color: #4a5568;
-            color: white;
-        }
-        
-        .main-header {
-            color: white;
-        }
-        
-        .metric-value {
-            color: white;
-        }
-        
-        .metric-label {
-            color: white;
-        }
-    }
-    
-    /* Theme-specific styling based on data attribute */
-    [data-theme="dark"] .metric-card {
-        background: #2d3748 !important;
-        border-color: #4a5568 !important;
-        color: white !important;
-    }
-    
-    [data-theme="dark"] .service-card {
-        background: #2d3748 !important;
-        border-color: #4a5568 !important;
-        color: white !important;
-    }
-    
-    [data-theme="dark"] .error-trend {
-        background: #2d3748 !important;
-        border-color: #4a5568 !important;
-        color: white !important;
-    }
-    
-    [data-theme="dark"] .main-header {
-        color: white !important;
-    }
-    
-    [data-theme="dark"] .metric-value {
-        color: white !important;
-    }
-    
-    [data-theme="dark"] .metric-label {
-        color: white !important;
-    }
-    
-    [data-theme="dark"] .stMarkdown,
-    [data-theme="dark"] .stSubheader,
-    [data-theme="dark"] .stCaption {
-        color: white !important;
-    }
-    
-    [data-theme="dark"] .stInfo {
-        background-color: #2d3748 !important;
-        color: white !important;
-        border-color: #4a5568 !important;
-    }
-    
-    /* Streamlit dark theme detection */
-    .stApp[data-testid="stAppViewContainer"] {
-        background-color: var(--background-color, #ffffff);
-    }
-    
-    /* Ensure text is readable in both themes */
-    .stMarkdown, .stSubheader, .stCaption {
-        color: var(--text-color, #000000);
-    }
-    
-    /* Table styling for better readability */
-    .stDataFrame {
-        background-color: var(--background-color, #ffffff);
-    }
-    
-    /* Button styling */
-    .stButton > button {
-        background-color: #4299e1;
+        background-color: #2d3748;
         color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 0.5rem 1rem;
-        font-weight: bold;
-    }
-    
-    .stButton > button:hover {
-        background-color: #3182ce;
-    }
-    
-    /* Link styling */
-    a {
-        color: #4299e1;
-        text-decoration: none;
-    }
-    
-    a:hover {
-        color: #3182ce;
-        text-decoration: underline;
+        border: 1px solid #4a5568;
     }
 </style>
-
-<script>
-// Function to set theme based on user selection
-function setTheme(themeMode) {
-    const appContainer = document.querySelector('[data-testid="stAppViewContainer"]');
-    if (appContainer) {
-        if (themeMode === 'Dark') {
-            appContainer.setAttribute('data-theme', 'dark');
-        } else {
-            appContainer.removeAttribute('data-theme');
-        }
-    }
-}
-
-// Set initial theme (this will be called when the page loads)
-setTheme('Light');
-</script>
 """, unsafe_allow_html=True)
 
 def load_error_data():
@@ -842,8 +700,8 @@ def create_error_details_table(filtered_data):
                 last_encountered = timestamp.astimezone(IST).strftime('%Y-%m-%d %H:%M:%S IST')
             else:
                 # Fallback to stored values
-                first_encountered = error.get('first_encountered', 'Unknown')
-                last_encountered = error.get('last_encountered', 'Unknown')
+        first_encountered = error.get('first_encountered', 'Unknown')
+        last_encountered = error.get('last_encountered', 'Unknown')
                 
                 # If still not available, use window times
                 if first_encountered == 'Unknown':
@@ -998,6 +856,12 @@ def main():
         hours = time_options[selected_time]
         st.sidebar.write(f"Using preset: {selected_time}")
     
+    # Auto-refresh
+    auto_refresh = st.sidebar.checkbox("Auto-refresh every 30 seconds", value=True)
+    
+    if auto_refresh:
+        st.sidebar.write("🔄 Auto-refreshing...")
+    
     # Theme toggle
     st.sidebar.subheader("Theme Settings")
     theme_mode = st.sidebar.selectbox(
@@ -1005,19 +869,6 @@ def main():
         ["Light", "Dark", "Auto"],
         index=0
     )
-    
-    # Add JavaScript to update theme
-    st.markdown(f"""
-    <script>
-        setTheme('{theme_mode}');
-    </script>
-    """, unsafe_allow_html=True)
-    
-    # Auto-refresh
-    auto_refresh = st.sidebar.checkbox("Auto-refresh every 30 seconds", value=True)
-    
-    if auto_refresh:
-        st.sidebar.write("🔄 Auto-refreshing...")
     
     # Load data
     error_data = load_error_data()
