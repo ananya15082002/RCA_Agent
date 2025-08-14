@@ -536,13 +536,19 @@ def create_error_summary_table(filtered_data, historical_data):
         else:
             category = "🟢 Low Frequency"
         
+        # Create clickable error directory link
+        if error_dir:
+            error_dir_link = f"[📁 {error_dir}](http://3.7.67.210:8501/?error_dir={error_dir})"
+        else:
+            error_dir_link = "No directory"
+        
         summary_data.append({
             'Error Type': error_type,
             'Count': total_count,
             'First Encountered': first_encountered_str,
             'Last Encountered': last_encountered_str,
             'Category': category,
-            'Error Directory': error_dir
+            'Error Directory': error_dir_link
         })
     
     # Sort by count (high frequency first)
@@ -582,7 +588,19 @@ def create_error_summary_table(filtered_data, historical_data):
     
     # Display summary table
     st.subheader("📊 Error Summary Table")
-    df = pd.DataFrame(summary_data)
+    
+    # Create DataFrame for display (without the Error Directory column for the dataframe)
+    display_data = []
+    for item in summary_data:
+        display_data.append({
+            'Error Type': item['Error Type'],
+            'Count': item['Count'],
+            'First Encountered': item['First Encountered'],
+            'Last Encountered': item['Last Encountered'],
+            'Category': item['Category']
+        })
+    
+    df = pd.DataFrame(display_data)
     
     # Add search functionality
     search_term = st.text_input("Search errors by type:")
@@ -606,9 +624,14 @@ def create_error_summary_table(filtered_data, historical_data):
         with col2:
             # Create the report URL
             error_dir = error_info['Error Directory']
-            if error_dir:
-                report_url = f"http://3.7.67.210:8501/?error_dir={error_dir}"
-                st.markdown(f"[📊 RCA Report]({report_url})")
+            if error_dir and error_dir != "No directory":
+                # Extract the error_dir from the markdown link
+                if "error_dir=" in error_dir:
+                    error_dir_clean = error_dir.split("error_dir=")[1].split(")")[0]
+                    report_url = f"http://3.7.67.210:8501/?error_dir={error_dir_clean}"
+                    st.markdown(f"[📊 RCA Report]({report_url})")
+                else:
+                    st.markdown("📊 No RCA report")
             else:
                 st.markdown("📊 No RCA report")
         
@@ -623,19 +646,36 @@ def create_error_summary_table(filtered_data, historical_data):
         
         st.markdown("---")
     
-    # Show category breakdown
+    # Show category breakdown with improved visibility
+    st.subheader("📈 **Error Category Breakdown**")
     col1, col2, col3 = st.columns(3)
+    
     with col1:
         frequent_count = len([x for x in summary_data if '🔴' in x['Category']])
-        st.metric("🔴 Frequent Spikes", frequent_count)
+        st.markdown(f"""
+        <div class="metric-card" style="background: linear-gradient(135deg, #dc3545, #c82333) !important; color: white !important;">
+            <div class="metric-value" style="color: white !important;">{frequent_count}</div>
+            <div class="metric-label" style="color: rgba(255,255,255,0.9) !important;">🔴 Frequent Spikes</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
         existing_count = len([x for x in summary_data if '🟠' in x['Category']])
-        st.metric("🟠 Existing Errors", existing_count)
+        st.markdown(f"""
+        <div class="metric-card" style="background: linear-gradient(135deg, #ffc107, #e0a800) !important; color: white !important;">
+            <div class="metric-value" style="color: white !important;">{existing_count}</div>
+            <div class="metric-label" style="color: rgba(255,255,255,0.9) !important;">🟠 Existing Errors</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col3:
         new_count = len(new_errors)
-        st.metric("🆕 New Errors", new_count)
+        st.markdown(f"""
+        <div class="metric-card" style="background: linear-gradient(135deg, #007bff, #0056b3) !important; color: white !important;">
+            <div class="metric-value" style="color: white !important;">{new_count}</div>
+            <div class="metric-label" style="color: rgba(255,255,255,0.9) !important;">🆕 New Errors</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 def create_metrics_dashboard(filtered_data, hours, theme_mode="Light"):
     """Create metrics dashboard"""
@@ -864,16 +904,32 @@ def create_error_details_table(filtered_data):
         # Extract error directory for report link
         error_dir = error.get('error_dir', '')
         
+        # Create clickable error directory link
+        if error_dir:
+            error_dir_link = f"[📁 {error_dir}](http://3.7.67.210:8501/?error_dir={error_dir})"
+        else:
+            error_dir_link = "No directory"
+        
         error_rows.append({
             'Service': service_name,
             'Error Count': error_count,
             'First Encountered': first_encountered,
             'Last Encountered': last_encountered,
-            'Error Directory': error_dir
+            'Error Directory': error_dir_link
         })
     
     if error_rows:
-        df = pd.DataFrame(error_rows)
+        # Create DataFrame for display (without the Error Directory column for the dataframe)
+        display_data = []
+        for item in error_rows:
+            display_data.append({
+                'Service': item['Service'],
+                'Error Count': item['Error Count'],
+                'First Encountered': item['First Encountered'],
+                'Last Encountered': item['Last Encountered']
+            })
+        
+        df = pd.DataFrame(display_data)
         
         # Display the table
         st.dataframe(df, use_container_width=True)
@@ -891,24 +947,27 @@ def create_error_details_table(filtered_data):
             with col2:
                 # Create the report URL
                 error_dir = error['Error Directory']
-                if error_dir:
-                    report_url = f"http://3.7.67.210:8501/?error_dir={error_dir}"
-                    st.markdown(f"[📊 RCA Report]({report_url})")
+                if error_dir and error_dir != "No directory":
+                    # Extract the error_dir from the markdown link
+                    if "error_dir=" in error_dir:
+                        error_dir_clean = error_dir.split("error_dir=")[1].split(")")[0]
+                        report_url = f"http://3.7.67.210:8501/?error_dir={error_dir_clean}"
+                        st.markdown(f"[📊 RCA Report]({report_url})")
+                    else:
+                        st.markdown("📊 No RCA report")
                 else:
                     st.markdown("📊 No RCA report")
             
             with col3:
-                # Add status indicator
+                # Add status indicator based on error count
                 if error['Error Count'] > 10:
-                    st.markdown("🔴 **High Frequency**")
+                    st.markdown("🔴 **High Priority**")
                 elif error['Error Count'] > 5:
-                    st.markdown("🟠 **Medium Frequency**")
+                    st.markdown("🟠 **Medium Priority**")
                 else:
-                    st.markdown("🟢 **Low Frequency**")
+                    st.markdown("🟢 **Low Priority**")
             
             st.markdown("---")
-    else:
-        st.info("No error details available for the selected time period.")
 
 def create_service_analytics(filtered_data):
     """Create service-wise analytics"""
