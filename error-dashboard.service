@@ -1,0 +1,17 @@
+[Unit]
+Description=Error Dashboard Streamlit App
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/home/ec2-user/RCA_Agent
+Environment=PATH=/home/ec2-user/RCA_Agent/venv/bin
+ExecStart=/home/ec2-user/RCA_Agent/venv/bin/streamlit run error_dashboard.py --server.port 8502 --server.address 0.0.0.0
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/ec2-user/RCA_Agent/logs/error_dashboard.log
+StandardError=append:/home/ec2-user/RCA_Agent/logs/error_dashboard.log
+
+[Install]
+WantedBy=multi-user.target 
