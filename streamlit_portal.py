@@ -45,6 +45,80 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Compute CubeAPM relative time from current time and redirect if requested
+try:
+	get_qp = st.experimental_get_query_params
+except Exception:
+	get_qp = lambda: st.query_params
+
+_qp = get_qp()
+if _qp.get('cubeapm_redirect', [None])[0] == '1':
+	import math
+	import urllib.parse
+	import time as _time
+	# Required params
+	env = _qp.get('env', [''])[0]
+	service = _qp.get('service', [''])[0]
+	endpoint = _qp.get('endpoint', [''])[0]
+	category = _qp.get('category', [''])[0]
+	http_code = _qp.get('http_code', [''])[0]
+	first_enc = _qp.get('first', [''])[0]
+	last_enc = _qp.get('last', [''])[0]
+
+	# Parse IST timestamps like 'YYYY-MM-DD HH:MM:SS IST'
+	def _parse_ist(ts):
+		if not ts:
+			return None
+		try:
+			if ts.endswith(' IST'):
+				dt = datetime.strptime(ts.replace(' IST', ''), '%Y-%m-%d %H:%M:%S')
+				dt = IST.localize(dt)
+				return int(dt.timestamp())
+			# Fallback: ISO8601
+			dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+			return int(dt.astimezone(IST).timestamp())
+		except Exception:
+			return None
+
+	start_epoch = _parse_ist(first_enc) or 0
+	end_epoch = _parse_ist(last_enc) or start_epoch
+	duration_sec = max(0, end_epoch - start_epoch)
+	now_epoch = int(_time.time())
+
+	# Compute relative window so that [now - time_window, now] covers the historical window
+	delta_sec = max(0, now_epoch - end_epoch)
+	# Add duration and small safety margin (120s), then ceil to minutes
+	required_minutes = math.ceil((delta_sec + duration_sec + 120) / 60)
+	# Round up to friendly buckets that CubeAPM supports
+	buckets = [5, 10, 15, 30, 60, 120, 180, 360, 720, 1440]
+	chosen = next((b for b in buckets if b >= required_minutes), 1440)
+	if chosen % 60 == 0 and chosen // 60 in [1, 2, 3, 6, 12, 24]:
+		time_param = f"{chosen // 60}h"
+	else:
+		time_param = f"{chosen}m"
+
+	refresh_ms = int(_time.time() * 1000)
+
+	# Build CubeAPM URL using relative time
+	base_url = "https://observability-prod.fxtrt.io/apm"
+	params = {
+		'alert_id': str(int(_time.time() * 1000)),  # ephemeral id
+		'time': time_param,
+		'refresh': str(refresh_ms),
+		'tab': 'errors',
+		'env': env,
+		'service': service,
+		'endpoint': urllib.parse.quote(endpoint) if endpoint else '',
+		'category': urllib.parse.quote(category) if category else '',
+		'http_code': http_code
+	}
+	query = '&'.join([f"{k}={v}" for k, v in params.items() if v is not None and v != ''])
+	cube_url = f"{base_url}?{query}"
+
+	# Immediate redirect
+	st.markdown(f"<meta http-equiv='refresh' content='0; url={cube_url}'>", unsafe_allow_html=True)
+	st.stop()
+
 # Custom CSS for better styling
 st.markdown("""
 <style>
@@ -237,8 +311,22 @@ def display_error_summary(error_card):
     
     # Add links section
     st.markdown("### 🔗 Quick Links")
-    st.markdown("**📊 RCA Report**")
-    st.markdown("Detailed root cause analysis and correlation data")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # RCA Report link
+        st.markdown("**📊 RCA Report**")
+        st.markdown("Detailed root cause analysis and correlation data")
+    
+    with col2:
+        # CubeAPM link
+        cubeapm_link = error_card.get('cubeapm_link')
+        if cubeapm_link:
+            st.markdown("**🔍 CubeAPM**")
+            st.markdown(f"[Open in CubeAPM]({cubeapm_link})")
+        else:
+            st.markdown("**🔍 CubeAPM**")
+            st.markdown("No CubeAPM link available")
 
 def display_correlation_table(data):
     """Display correlation data with improved timeline view and tree visualization"""
@@ -287,10 +375,10 @@ def display_correlation_table(data):
             filtered_df = filtered_df[filtered_df['operation_name'] == operation_filter]
         
         # Create tabs for different views
-        tab1, tab2, tab3, tab4 = st.tabs(["Summary", "Timeline", "JSON View", "Data Table"])
+        tab1, tab2, tab3 = st.tabs(["Timeline", "JSON View", "Data Table"])
         
         with tab1:
-            st.subheader("📋 Event Summary")
+            st.subheader("Event Timeline")
             
             # Show deduplication info
             original_count = len(df)
@@ -298,43 +386,7 @@ def display_correlation_table(data):
             if original_count != filtered_count:
                 st.info(f"📊 **Timeline Summary**: Showing {filtered_count} unique events (deduplicated from {original_count} total events)")
             
-            # Group events by service and show summary
-            service_summary = filtered_df.groupby('service_name').agg({
-                'operation_name': 'count',
-                'why': lambda x: '; '.join(set(x.dropna())),
-                'duration': lambda x: '; '.join(set(x.dropna()))
-            }).rename(columns={'operation_name': 'event_count'})
-            
-            st.write("**Service-wise Event Summary:**")
-            st.dataframe(service_summary, use_container_width=True)
-            
-            # Show key error patterns
-            st.write("**🔍 Key Error Patterns:**")
-            error_patterns = filtered_df['why'].value_counts().head(5)
-            for pattern, count in error_patterns.items():
-                if pd.notna(pattern) and pattern.strip():
-                    st.write(f"• **{count} events**: {pattern}")
-            
-            # Show most affected operations
-            st.write("**🎯 Most Affected Operations:**")
-            operation_counts = filtered_df['operation_name'].value_counts().head(5)
-            for operation, count in operation_counts.items():
-                st.write(f"• **{count} events**: {operation}")
-        
-        with tab2:
-            st.subheader("Event Timeline")
-            
-            # Add event limit slider for better performance
-            max_events = st.slider("Maximum events to display", 5, 50, 15, help="Limit the number of events shown to improve performance")
-            
-            # Show only the most recent events or limit by count
-            if len(filtered_df) > max_events:
-                st.warning(f"⚠️ Showing only the first {max_events} events out of {len(filtered_df)} total events. Use the slider above to adjust.")
-                display_df = filtered_df.head(max_events)
-            else:
-                display_df = filtered_df
-            
-            for idx, row in display_df.iterrows():
+            for idx, row in filtered_df.iterrows():
                 with st.expander(f"Event {idx+1}: {row['timestamp']} - {row['operation_name']}"):
                     col1, col2 = st.columns(2)
                     with col1:
