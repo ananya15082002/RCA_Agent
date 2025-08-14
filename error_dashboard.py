@@ -700,8 +700,8 @@ def create_error_details_table(filtered_data):
                 last_encountered = timestamp.astimezone(IST).strftime('%Y-%m-%d %H:%M:%S IST')
             else:
                 # Fallback to stored values
-        first_encountered = error.get('first_encountered', 'Unknown')
-        last_encountered = error.get('last_encountered', 'Unknown')
+                first_encountered = error.get('first_encountered', 'Unknown')
+                last_encountered = error.get('last_encountered', 'Unknown')
                 
                 # If still not available, use window times
                 if first_encountered == 'Unknown':
