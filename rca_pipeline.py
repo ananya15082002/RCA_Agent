@@ -188,29 +188,26 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
                 start_epoch = int(first_time.timestamp())
                 end_epoch = int(last_time.timestamp())
                 
-                # Compute relative time window from NOW so historical errors are visible
-                # CubeAPM ignores start/end and respects `time` anchored at current refresh
-                error_duration = max(60, end_epoch - start_epoch)
-                now_epoch = int(time.time())
-                delta_seconds = max(0, now_epoch - end_epoch)
+                # Calculate exact 5-minute window using error card timestamps
+                error_duration = end_epoch - start_epoch
                 
-                # Add buffer time to ensure at least 5 minutes total window
-                buffer_seconds = 300  # 5 minutes buffer
-                total_duration = error_duration + buffer_seconds
+                # Calculate buffer time to make total window exactly 5 minutes (300 seconds)
+                buffer_seconds = max(0, 300 - error_duration)  # Ensure total is 5 minutes
                 
-                # Required minutes so that [now - time, now] fully covers [start, end] + buffer
-                required_minutes = (delta_seconds + total_duration + 120 + 59) // 60  # ceil + small buffer
-                # Round to friendly buckets preferred by UI
-                buckets = [5, 10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880]
-                chosen_minutes = next((b for b in buckets if b >= required_minutes), 2880)
+                # Add buffer evenly before and after the error window
+                buffer_before = buffer_seconds // 2
+                buffer_after = buffer_seconds - buffer_before
                 
-                # Ensure minimum 5 minutes window
-                chosen_minutes = max(5, chosen_minutes)
+                # Calculate final start and end times with buffer
+                final_start_epoch = start_epoch - buffer_before
+                final_end_epoch = end_epoch + buffer_after
                 
-                if chosen_minutes % 60 == 0:
-                    time_param = f"{chosen_minutes//60}h"
-                else:
-                    time_param = f"{chosen_minutes}m"
+                # Convert to ISO format for CubeAPM time parameter
+                final_start_iso = datetime.fromtimestamp(final_start_epoch, tz=pytz.UTC).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+                final_end_iso = datetime.fromtimestamp(final_end_epoch, tz=pytz.UTC).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+                
+                # Create time parameter in the format CubeAPM expects
+                time_param = f"{final_start_iso}~{final_end_iso}"
                 
             except Exception as e:
                 print(f"Error parsing error occurrence times: {e}")
@@ -250,7 +247,7 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
         query_string = '&'.join([f"{k}={v}" for k, v in params.items() if v])
         cubeapm_url = f"{base_url}?{query_string}"
         
-        print(f"[INFO] Generated CubeAPM link with relative window: {time_param} (delta={(delta_seconds//60)}m, duration={error_duration}s, buffer={buffer_seconds}s)")
+        print(f"[INFO] Generated CubeAPM link with exact 5-minute window: {time_param} (error_duration={error_duration}s, buffer={buffer_seconds}s)")
         
         return cubeapm_url
         
@@ -2272,8 +2269,8 @@ def save_last_processed_time(epoch_ts):
         f.write(str(epoch_ts))
 
 def main_loop():
-    print("[START] Comprehensive Error RCA System - Monitoring all environments (except excluded) for 5xx errors")
-    print(f"[INFO] Monitoring all services across environments (excluding fxtrt-shared-prod and fxtrt-devportal-prod)")
+    print("[START] Comprehensive Error RCA System - Monitoring UNSET environment services for 5xx errors")
+    print(f"[INFO] Target services: {', '.join(TARGET_SERVICES[:5])}... and {len(TARGET_SERVICES)-5} more")
     
     while True:
         try:
