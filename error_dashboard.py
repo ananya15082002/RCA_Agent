@@ -1144,7 +1144,7 @@ def main():
         else:
             st.info("No recent errors found.")
     
-    # Auto-refresh logic
+    # Auto-refresh logic - disabled for stability
     # if auto_refresh:
     #     time.sleep(30)
     #     st.rerun()
