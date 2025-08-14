@@ -188,24 +188,20 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
                 start_epoch = int(first_time.timestamp())
                 end_epoch = int(last_time.timestamp())
                 
-                # Calculate dynamic time window based on error duration
-                error_duration = end_epoch - start_epoch
-                current_time = int(time.time())
-                
-                # If error occurred more than 15 minutes ago, use a smaller window
-                if current_time - end_epoch > 900:  # 15 minutes
-                    # Use 5-minute window around the error
-                    window_size = 300  # 5 minutes
-                elif current_time - end_epoch > 300:  # 5 minutes
-                    # Use 10-minute window
-                    window_size = 600  # 10 minutes
+                # Compute relative time window from NOW so historical errors are visible
+                # CubeAPM ignores start/end and respects `time` anchored at current refresh
+                error_duration = max(60, end_epoch - start_epoch)
+                now_epoch = int(time.time())
+                delta_seconds = max(0, now_epoch - end_epoch)
+                # Required minutes so that [now - time, now] fully covers [start, end]
+                required_minutes = (delta_seconds + error_duration + 120 + 59) // 60  # ceil + small buffer
+                # Round to friendly buckets preferred by UI
+                buckets = [5, 10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880]
+                chosen_minutes = next((b for b in buckets if b >= required_minutes), 2880)
+                if chosen_minutes % 60 == 0:
+                    time_param = f"{chosen_minutes//60}h"
                 else:
-                    # Recent error, use 15-minute window
-                    window_size = 900  # 15 minutes
-                
-                # Add buffer around the error occurrence time
-                start_epoch -= window_size // 2  # Half window before
-                end_epoch += window_size // 2    # Half window after
+                    time_param = f"{chosen_minutes}m"
                 
             except Exception as e:
                 print(f"Error parsing error occurrence times: {e}")
@@ -221,14 +217,13 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
         encoded_endpoint = urllib.parse.quote(root_name) if root_name != 'Unknown' else ''
         encoded_category = urllib.parse.quote(exception) if exception != 'Unknown Error' else ''
         
-        # Build the CubeAPM URL with dynamic time window
+        # Build the CubeAPM URL with relative time window anchored to now
         base_url = "https://observability-prod.fxtrt.io/apm"
         
-        # URL parameters - using dynamic start and end timestamps with targeting
+        # URL parameters - use relative `time` instead of start/end (CubeAPM respects this)
         params = {
             'alert_id': str(alert_id),
-            'start': str(start_epoch),
-            'end': str(end_epoch),
+            'time': time_param,
             'refresh': str(refresh_time),
             'tab': 'errors',
             'section': '',
@@ -246,7 +241,7 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
         query_string = '&'.join([f"{k}={v}" for k, v in params.items() if v])
         cubeapm_url = f"{base_url}?{query_string}"
         
-        print(f"[INFO] Generated CubeAPM link with dynamic window: {window_size//60}min around error time")
+        print(f"[INFO] Generated CubeAPM link with relative window: {time_param} (delta={(delta_seconds//60)}m, duration={error_duration}s)")
         
         return cubeapm_url
         
@@ -1973,28 +1968,9 @@ Latest Encountered: {last_time_display}
     # Add CubeAPM link if available
     cubeapm_link = card.get('cubeapm_link')
     if cubeapm_link:
-        # Build redirector URL so time is computed at click-time
-        try:
-            public_ip = "3.7.67.210"
-        except Exception:
-            public_ip = "3.7.67.210"
-        first_display = format_time_for_display(first_encountered)
-        last_display = format_time_for_display(last_encountered)
-        redirect_params = {
-            'cubeapm_redirect': '1',
-            'env': card.get('env', ''),
-            'service': card.get('service', ''),
-            'endpoint': card.get('root_name', ''),
-            'category': card.get('exception', ''),
-            'http_code': str(card.get('http_code', '')),
-            'first': first_display,
-            'last': last_display
-        }
-        redirect_qs = '&'.join([f"{k}={urllib.parse.quote(str(v))}" for k, v in redirect_params.items()])
-        redirect_url = f"http://{public_ip}:8501/?{redirect_qs}"
         buttons.append({
             "text": "🔍 Open in CubeAPM",
-            "onClick": {"openLink": {"url": redirect_url}}
+            "onClick": {"openLink": {"url": cubeapm_link}}
         })
     
     main_payload = {
