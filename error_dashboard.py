@@ -1089,11 +1089,11 @@ def main():
     )
     
     # Add JavaScript to update theme
-    st.markdown(f"""
-    <script>
-        setTheme('{theme_mode}');
-    </script>
-    """, unsafe_allow_html=True)
+    # st.markdown(f"""
+    # <script>
+    #     setTheme('{theme_mode}');
+    # </script>
+    # """, unsafe_allow_html=True)
     
     # Load data
     error_data = load_error_data()
