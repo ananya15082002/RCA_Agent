@@ -219,17 +219,16 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
                 final_end_epoch = end_epoch + buffer_after
                 
                 # Convert to ISO format for CubeAPM time parameter using UTC times
-                # Round to nearest minute for better CubeAPM compatibility
-                final_start_dt = datetime.fromtimestamp(final_start_epoch, tz=pytz.UTC)
-                final_end_dt = datetime.fromtimestamp(final_end_epoch, tz=pytz.UTC)
+                # Round times to nearest minute for better CubeAPM compatibility
+                start_dt = datetime.fromtimestamp(final_start_epoch, tz=pytz.UTC)
+                end_dt = datetime.fromtimestamp(final_end_epoch, tz=pytz.UTC)
                 
-                # Round start time down to the minute
-                final_start_rounded = final_start_dt.replace(second=0, microsecond=0)
-                # Round end time up to the minute
-                final_end_rounded = final_end_dt.replace(second=0, microsecond=0) + timedelta(minutes=1)
+                # Round to nearest minute (set seconds to 00)
+                start_dt_rounded = start_dt.replace(second=0, microsecond=0)
+                end_dt_rounded = end_dt.replace(second=0, microsecond=0)
                 
-                final_start_iso = final_start_rounded.strftime('%Y-%m-%dT%H:%M:%S.000Z')
-                final_end_iso = final_end_rounded.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+                final_start_iso = start_dt_rounded.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+                final_end_iso = end_dt_rounded.strftime('%Y-%m-%dT%H:%M:%S.000Z')
                 
                 # Create time parameter in the format CubeAPM expects
                 time_param = f"{final_start_iso}~{final_end_iso}"
@@ -303,10 +302,9 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     # '''
     
     # Query 2: 5xx errors EXCEPT 500 for all environments (excluding specific ones)
-    # Use count_over_time to get actual counts instead of rates
     query2 = f'''
     sum by (env,service,root_name,http_code,exception,span_kind) (
-        count_over_time(cube_apm_calls_total{{
+        increase(cube_apm_calls_total{{
             span_kind=~"server|consumer",
             env!~"fxtrt-shared-prod|fxtrt-devportal-prod",
             http_code=~"5..",
@@ -318,7 +316,7 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
     # Query 3: Additional query to catch any missing 5xx errors with different grouping
     query3 = f'''
     sum by (env,service,root_name,http_code,exception) (
-        count_over_time(cube_apm_calls_total{{
+        increase(cube_apm_calls_total{{
             span_kind=~"server|consumer",
             env!~"fxtrt-shared-prod|fxtrt-devportal-prod",
             http_code=~"5..",
@@ -343,19 +341,31 @@ def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
             result = r.json()
             
             for m in result.get("data", {}).get("result", []):
-                # The count_over_time() function returns actual count, not rate
-                actual_count = float(m["values"][-1][1])
+                # The increase() function returns the actual increase in counter value over the time window
+                # For a 5-minute window, this should be the actual number of errors
+                increase_value = float(m["values"][-1][1])
+                
+                # The increase() function gives us the actual count of errors in the time window
+                # But we need to check if there are multiple data points with errors
+                error_count = 0
+                for timestamp, value in m["values"]:
+                    if float(value) > 0:
+                        error_count += float(value)
+                
+                # Use the sum of all error values in the time window
+                actual_count = error_count if error_count > 0 else increase_value
                 
                 if actual_count > 0:
                     # Get service and environment
                     service = m["metric"].get("service", "Unknown")
                     env = m["metric"].get("env", "Unknown")
                     
-                    # Debug: Log all detected errors
-                    print(f"[DEBUG] Detected error - Service: {service}, Env: {env}, HTTP: {m['metric'].get('http_code')}, Count: {actual_count}")
+                    # Debug: Log all detected errors with detailed count analysis
+                    print(f"[DEBUG] Detected error - Service: {service}, Env: {env}, HTTP: {m['metric'].get('http_code')}, Increase: {increase_value}, Calculated Count: {actual_count}")
                     
                     # Also log the raw values for debugging
                     print(f"[DEBUG] Raw values: {m['values']}")
+                    print(f"[DEBUG] Error count calculation: {error_count} from {len(m['values'])} data points")
                     
                     # Handle http_code - if it's NA or missing, set to "ERROR"
                     http_code = m["metric"].get("http_code", "ERROR")
