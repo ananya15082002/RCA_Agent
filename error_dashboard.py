@@ -46,99 +46,206 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for dark theme styling
+# Custom CSS for responsive theme styling
 st.markdown("""
 <style>
+    /* Responsive theme styling */
     .main-header {
         font-size: 2rem;
         font-weight: bold;
-        color: white;
         text-align: left;
         margin-bottom: 1rem;
+        color: var(--text-color, #000000);
     }
+    
     .metric-card {
-        background: #2d3748;
+        background: var(--card-bg, #ffffff);
         padding: 1rem;
         border-radius: 8px;
-        color: white;
         text-align: center;
         margin: 0.5rem 0;
-        border: 1px solid #4a5568;
+        border: 1px solid var(--border-color, #e0e0e0);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        color: var(--text-color, #000000);
     }
+    
     .metric-value {
         font-size: 1.5rem;
         font-weight: bold;
+        color: var(--text-color, #000000);
     }
+    
     .metric-label {
         font-size: 0.8rem;
         opacity: 0.8;
+        color: var(--text-color, #000000);
     }
+    
     .service-card {
-        background: #2d3748;
+        background: var(--card-bg, #ffffff);
         padding: 1rem;
         border-radius: 8px;
         border-left: 4px solid #4299e1;
         margin: 0.5rem 0;
-        color: white;
+        border: 1px solid var(--border-color, #e0e0e0);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        color: var(--text-color, #000000);
     }
+    
     .error-trend {
-        background: #2d3748;
-        border: 1px solid #4a5568;
+        background: var(--card-bg, #ffffff);
+        border: 1px solid var(--border-color, #e0e0e0);
         border-radius: 8px;
         padding: 1rem;
         margin: 0.5rem 0;
-        color: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        color: var(--text-color, #000000);
     }
-    .stAlert {
-        background-color: #2d3748;
-        border-color: #4a5568;
-        color: white;
-    }
+    
     .new-error {
         background: #e53e3e;
         color: white;
         padding: 0.5rem;
         border-radius: 5px;
         margin: 0.2rem 0;
+        font-weight: bold;
     }
+    
     .frequent-error {
         background: #dd6b20;
         color: white;
         padding: 0.5rem;
         border-radius: 5px;
         margin: 0.2rem 0;
+        font-weight: bold;
     }
+    
     .existing-error {
         background: #3182ce;
         color: white;
         padding: 0.5rem;
         border-radius: 5px;
         margin: 0.2rem 0;
+        font-weight: bold;
     }
     
-    /* Dark theme for Streamlit */
-    .stApp {
-        background-color: #1a202c;
+    /* Theme-aware styling */
+    [data-testid="stAppViewContainer"] {
+        background-color: var(--bg-color, #ffffff);
     }
     
     .stMarkdown {
-        color: white;
+        color: var(--text-color, #000000);
     }
     
     .stSubheader {
-        color: white;
+        color: var(--text-color, #000000);
     }
     
     .stCaption {
-        color: #a0aec0;
+        color: var(--text-color, #666666);
     }
     
     .stInfo {
+        background-color: var(--card-bg, #ffffff);
+        color: var(--text-color, #000000);
+        border: 1px solid var(--border-color, #e0e0e0);
+    }
+    
+    /* Dark theme overrides */
+    [data-theme="dark"] .main-header {
+        color: white;
+    }
+    
+    [data-theme="dark"] .metric-card {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: white;
+    }
+    
+    [data-theme="dark"] .service-card {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: white;
+    }
+    
+    [data-theme="dark"] .error-trend {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: white;
+    }
+    
+    [data-theme="dark"] .metric-value {
+        color: white;
+    }
+    
+    [data-theme="dark"] .metric-label {
+        color: white;
+    }
+    
+    [data-theme="dark"] .stMarkdown,
+    [data-theme="dark"] .stSubheader,
+    [data-theme="dark"] .stCaption {
+        color: white;
+    }
+    
+    [data-theme="dark"] .stInfo {
         background-color: #2d3748;
         color: white;
-        border: 1px solid #4a5568;
+        border-color: #4a5568;
+    }
+    
+    [data-theme="dark"] [data-testid="stAppViewContainer"] {
+        background-color: #1a202c;
+    }
+    
+    /* Table styling for better readability */
+    .stDataFrame {
+        background-color: var(--card-bg, #ffffff);
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        background-color: #4299e1;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+    }
+    
+    .stButton > button:hover {
+        background-color: #3182ce;
+    }
+    
+    /* Link styling */
+    a {
+        color: #4299e1;
+        text-decoration: none;
+    }
+    
+    a:hover {
+        color: #3182ce;
+        text-decoration: underline;
     }
 </style>
+
+<script>
+// Function to set theme based on user selection
+function setTheme(themeMode) {
+    const appContainer = document.querySelector('[data-testid="stAppViewContainer"]');
+    if (appContainer) {
+        if (themeMode === 'Dark') {
+            appContainer.setAttribute('data-theme', 'dark');
+        } else {
+            appContainer.removeAttribute('data-theme');
+        }
+    }
+}
+
+// Set initial theme (this will be called when the page loads)
+setTheme('Light');
+</script>
 """, unsafe_allow_html=True)
 
 def load_error_data():
@@ -869,6 +976,13 @@ def main():
         ["Light", "Dark", "Auto"],
         index=0
     )
+    
+    # Add JavaScript to update theme
+    st.markdown(f"""
+    <script>
+        setTheme('{theme_mode}');
+    </script>
+    """, unsafe_allow_html=True)
     
     # Load data
     error_data = load_error_data()
