@@ -646,8 +646,7 @@ def create_error_summary_table(filtered_data, historical_data):
         
         st.markdown("---")
     
-    # Show category breakdown with improved visibility - ONLY ONCE
-    # Use a simpler approach to prevent duplication
+    # Show category breakdown with improved visibility
     st.subheader("📈 **Error Category Breakdown**")
     col1, col2, col3 = st.columns(3)
     
@@ -1075,7 +1074,7 @@ def main():
         st.sidebar.write(f"Using preset: {selected_time}")
     
     # Auto-refresh
-    auto_refresh = st.sidebar.checkbox("Auto-refresh every 30 seconds", value=False)
+    auto_refresh = st.sidebar.checkbox("Auto-refresh every 30 seconds", value=True)
     
     if auto_refresh:
         st.sidebar.write("🔄 Auto-refreshing...")
@@ -1089,11 +1088,11 @@ def main():
     )
     
     # Add JavaScript to update theme
-    # st.markdown(f"""
-    # <script>
-    #     setTheme('{theme_mode}');
-    # </script>
-    # """, unsafe_allow_html=True)
+    st.markdown(f"""
+    <script>
+        setTheme('{theme_mode}');
+    </script>
+    """, unsafe_allow_html=True)
     
     # Load data
     error_data = load_error_data()
@@ -1144,10 +1143,10 @@ def main():
         else:
             st.info("No recent errors found.")
     
-    # Auto-refresh logic - disabled for stability
-    # if auto_refresh:
-    #     time.sleep(30)
-    #     st.rerun()
+    # Auto-refresh logic
+    if auto_refresh:
+        time.sleep(30)
+        st.rerun()
 
 if __name__ == "__main__":
     main() 
