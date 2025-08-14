@@ -46,65 +46,127 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for responsive theme styling
+# Custom CSS for uniform theme styling
 st.markdown("""
 <style>
-    /* Responsive theme styling */
+    /* Uniform theme system */
+    [data-theme="light"] {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f8f9fa;
+        --bg-card: #ffffff;
+        --text-primary: #000000;
+        --text-secondary: #6c757d;
+        --border-color: #dee2e6;
+        --accent-color: #007bff;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+        --chart-grid: rgba(0,0,0,0.1);
+        --chart-line: rgba(0,0,0,0.3);
+        --legend-bg: rgba(255,255,255,0.9);
+        --legend-border: rgba(0,0,0,0.2);
+    }
+    
+    [data-theme="dark"] {
+        --bg-primary: #1a202c;
+        --bg-secondary: #2d3748;
+        --bg-card: #2d3748;
+        --text-primary: #ffffff;
+        --text-secondary: #a0aec0;
+        --border-color: #4a5568;
+        --accent-color: #4299e1;
+        --success-color: #48bb78;
+        --warning-color: #ed8936;
+        --danger-color: #e53e3e;
+        --chart-grid: rgba(255,255,255,0.1);
+        --chart-line: rgba(255,255,255,0.3);
+        --legend-bg: rgba(0,0,0,0.8);
+        --legend-border: rgba(255,255,255,0.2);
+    }
+    
+    /* Default to light theme */
+    :root {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f8f9fa;
+        --bg-card: #ffffff;
+        --text-primary: #000000;
+        --text-secondary: #6c757d;
+        --border-color: #dee2e6;
+        --accent-color: #007bff;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+        --chart-grid: rgba(0,0,0,0.1);
+        --chart-line: rgba(0,0,0,0.3);
+        --legend-bg: rgba(255,255,255,0.9);
+        --legend-border: rgba(0,0,0,0.2);
+    }
+    
+    /* Apply theme to entire app */
+    .stApp {
+        background-color: var(--bg-primary) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* Main header */
     .main-header {
         font-size: 2rem;
         font-weight: bold;
+        color: var(--text-primary) !important;
         text-align: left;
         margin-bottom: 1rem;
-        color: var(--text-color, #000000);
     }
     
+    /* Metric cards */
     .metric-card {
-        background: var(--card-bg, #ffffff);
+        background: var(--bg-card) !important;
         padding: 1rem;
         border-radius: 8px;
+        color: var(--text-primary) !important;
         text-align: center;
         margin: 0.5rem 0;
-        border: 1px solid var(--border-color, #e0e0e0);
+        border: 1px solid var(--border-color) !important;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        color: var(--text-color, #000000);
     }
     
     .metric-value {
         font-size: 1.5rem;
         font-weight: bold;
-        color: var(--text-color, #000000);
+        color: var(--text-primary) !important;
     }
     
     .metric-label {
         font-size: 0.8rem;
         opacity: 0.8;
-        color: var(--text-color, #000000);
+        color: var(--text-secondary) !important;
     }
     
+    /* Service cards */
     .service-card {
-        background: var(--card-bg, #ffffff);
+        background: var(--bg-card) !important;
         padding: 1rem;
         border-radius: 8px;
-        border-left: 4px solid #4299e1;
+        border-left: 4px solid var(--accent-color);
         margin: 0.5rem 0;
-        border: 1px solid var(--border-color, #e0e0e0);
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-color) !important;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        color: var(--text-color, #000000);
     }
     
+    /* Error trend */
     .error-trend {
-        background: var(--card-bg, #ffffff);
-        border: 1px solid var(--border-color, #e0e0e0);
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-color) !important;
         border-radius: 8px;
         padding: 1rem;
         margin: 0.5rem 0;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        color: var(--text-color, #000000);
     }
     
+    /* Error badges */
     .new-error {
-        background: #e53e3e;
-        color: white;
+        background: var(--danger-color) !important;
+        color: white !important;
         padding: 0.5rem;
         border-radius: 5px;
         margin: 0.2rem 0;
@@ -112,8 +174,8 @@ st.markdown("""
     }
     
     .frequent-error {
-        background: #dd6b20;
-        color: white;
+        background: var(--warning-color) !important;
+        color: white !important;
         padding: 0.5rem;
         border-radius: 5px;
         margin: 0.2rem 0;
@@ -121,112 +183,95 @@ st.markdown("""
     }
     
     .existing-error {
-        background: #3182ce;
-        color: white;
+        background: var(--accent-color) !important;
+        color: white !important;
         padding: 0.5rem;
         border-radius: 5px;
         margin: 0.2rem 0;
         font-weight: bold;
     }
     
-    /* Theme-aware styling */
-    [data-testid="stAppViewContainer"] {
-        background-color: var(--bg-color, #ffffff);
-    }
-    
+    /* Streamlit components */
     .stMarkdown {
-        color: var(--text-color, #000000);
+        color: var(--text-primary) !important;
     }
     
     .stSubheader {
-        color: var(--text-color, #000000);
+        color: var(--text-primary) !important;
     }
     
     .stCaption {
-        color: var(--text-color, #666666);
+        color: var(--text-secondary) !important;
     }
     
     .stInfo {
-        background-color: var(--card-bg, #ffffff);
-        color: var(--text-color, #000000);
-        border: 1px solid var(--border-color, #e0e0e0);
+        background-color: var(--bg-card) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-color) !important;
     }
     
-    /* Dark theme overrides */
-    [data-theme="dark"] .main-header {
-        color: white;
+    /* Sidebar styling */
+    .css-1d391kg {
+        background-color: var(--bg-secondary) !important;
     }
     
-    [data-theme="dark"] .metric-card {
-        background: #2d3748;
-        border-color: #4a5568;
-        color: white;
-    }
-    
-    [data-theme="dark"] .service-card {
-        background: #2d3748;
-        border-color: #4a5568;
-        color: white;
-    }
-    
-    [data-theme="dark"] .error-trend {
-        background: #2d3748;
-        border-color: #4a5568;
-        color: white;
-    }
-    
-    [data-theme="dark"] .metric-value {
-        color: white;
-    }
-    
-    [data-theme="dark"] .metric-label {
-        color: white;
-    }
-    
-    [data-theme="dark"] .stMarkdown,
-    [data-theme="dark"] .stSubheader,
-    [data-theme="dark"] .stCaption {
-        color: white;
-    }
-    
-    [data-theme="dark"] .stInfo {
-        background-color: #2d3748;
-        color: white;
-        border-color: #4a5568;
-    }
-    
-    [data-theme="dark"] [data-testid="stAppViewContainer"] {
-        background-color: #1a202c;
-    }
-    
-    /* Table styling for better readability */
+    /* Table styling */
     .stDataFrame {
-        background-color: var(--card-bg, #ffffff);
+        background-color: var(--bg-card) !important;
     }
     
     /* Button styling */
     .stButton > button {
-        background-color: #4299e1;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 0.5rem 1rem;
-        font-weight: bold;
+        background-color: var(--accent-color) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 4px !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: bold !important;
     }
     
     .stButton > button:hover {
-        background-color: #3182ce;
+        background-color: var(--accent-color) !important;
+        opacity: 0.9 !important;
     }
     
     /* Link styling */
     a {
-        color: #4299e1;
-        text-decoration: none;
+        color: var(--accent-color) !important;
+        text-decoration: none !important;
     }
     
     a:hover {
-        color: #3182ce;
-        text-decoration: underline;
+        color: var(--accent-color) !important;
+        text-decoration: underline !important;
+        opacity: 0.8 !important;
+    }
+    
+    /* Input styling */
+    .stTextInput > div > div > input {
+        background-color: var(--bg-card) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    /* Selectbox styling */
+    .stSelectbox > div > div > div {
+        background-color: var(--bg-card) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    /* Number input styling */
+    .stNumberInput > div > div > input {
+        background-color: var(--bg-card) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    /* Checkbox styling */
+    .stCheckbox > div > div {
+        background-color: var(--bg-card) !important;
+        color: var(--text-primary) !important;
     }
 </style>
 
@@ -238,7 +283,7 @@ function setTheme(themeMode) {
         if (themeMode === 'Dark') {
             appContainer.setAttribute('data-theme', 'dark');
         } else {
-            appContainer.removeAttribute('data-theme');
+            appContainer.setAttribute('data-theme', 'light');
         }
     }
 }
@@ -912,7 +957,10 @@ def get_theme_colors(theme_mode="Light"):
             'grid_color': 'rgba(255,255,255,0.1)',
             'line_color': 'rgba(255,255,255,0.3)',
             'legend_bg': 'rgba(0,0,0,0.8)',
-            'legend_border': 'rgba(255,255,255,0.2)'
+            'legend_border': 'rgba(255,255,255,0.2)',
+            'bg_primary': '#1a202c',
+            'bg_card': '#2d3748',
+            'border_color': '#4a5568'
         }
     else:  # Light theme (default)
         return {
@@ -920,7 +968,10 @@ def get_theme_colors(theme_mode="Light"):
             'grid_color': 'rgba(0,0,0,0.1)',
             'line_color': 'rgba(0,0,0,0.3)',
             'legend_bg': 'rgba(255,255,255,0.9)',
-            'legend_border': 'rgba(0,0,0,0.2)'
+            'legend_border': 'rgba(0,0,0,0.2)',
+            'bg_primary': '#ffffff',
+            'bg_card': '#ffffff',
+            'border_color': '#dee2e6'
         }
 
 def main():
