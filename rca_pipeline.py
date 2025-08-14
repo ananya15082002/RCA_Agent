@@ -167,31 +167,42 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
                 # Parse first encountered time
                 if isinstance(first_encountered, str):
                     if 'IST' in first_encountered:
-                        first_time = datetime.strptime(first_encountered.replace(' IST', ''), '%Y-%m-%d %H:%M:%S')
+                        # Parse IST time and convert to UTC properly
+                        ist_time_str = first_encountered.replace(' IST', '')
+                        first_time = datetime.strptime(ist_time_str, '%Y-%m-%d %H:%M:%S')
                         first_time = IST.localize(first_time)
+                        # Convert to UTC for CubeAPM
+                        first_time_utc = first_time.astimezone(pytz.UTC)
                     else:
                         first_time = datetime.fromisoformat(first_encountered.replace('Z', '+00:00'))
+                        first_time_utc = first_time.astimezone(pytz.UTC)
                 else:
                     first_time = first_encountered
+                    first_time_utc = first_time.astimezone(pytz.UTC)
                 
                 # Parse last encountered time
                 if isinstance(last_encountered, str):
                     if 'IST' in last_encountered:
-                        last_time = datetime.strptime(last_encountered.replace(' IST', ''), '%Y-%m-%d %H:%M:%S')
+                        # Parse IST time and convert to UTC properly
+                        ist_time_str = last_encountered.replace(' IST', '')
+                        last_time = datetime.strptime(ist_time_str, '%Y-%m-%d %H:%M:%S')
                         last_time = IST.localize(last_time)
+                        # Convert to UTC for CubeAPM
+                        last_time_utc = last_time.astimezone(pytz.UTC)
                     else:
                         last_time = datetime.fromisoformat(last_encountered.replace('Z', '+00:00'))
+                        last_time_utc = last_time.astimezone(pytz.UTC)
                 else:
                     last_time = last_encountered
+                    last_time_utc = last_time.astimezone(pytz.UTC)
                 
                 # Debug: Print the parsed times
-                print(f"[DEBUG] Parsed times - First: {first_time} (IST), Last: {last_time} (IST)")
-                print(f"[DEBUG] First time UTC: {first_time.astimezone(pytz.UTC)}")
-                print(f"[DEBUG] Last time UTC: {last_time.astimezone(pytz.UTC)}")
+                print(f"[DEBUG] Parsed times - First: {first_time} (IST) -> {first_time_utc} (UTC)")
+                print(f"[DEBUG] Parsed times - Last: {last_time} (IST) -> {last_time_utc} (UTC)")
                 
-                # Convert to epoch timestamps
-                start_epoch = int(first_time.timestamp())
-                end_epoch = int(last_time.timestamp())
+                # Convert to epoch timestamps using UTC times
+                start_epoch = int(first_time_utc.timestamp())
+                end_epoch = int(last_time_utc.timestamp())
                 
                 # Calculate exact 5-minute window using error card timestamps
                 error_duration = end_epoch - start_epoch
@@ -207,7 +218,7 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
                 final_start_epoch = start_epoch - buffer_before
                 final_end_epoch = end_epoch + buffer_after
                 
-                # Convert to ISO format for CubeAPM time parameter
+                # Convert to ISO format for CubeAPM time parameter using UTC times
                 final_start_iso = datetime.fromtimestamp(final_start_epoch, tz=pytz.UTC).strftime('%Y-%m-%dT%H:%M:%S.000Z')
                 final_end_iso = datetime.fromtimestamp(final_end_epoch, tz=pytz.UTC).strftime('%Y-%m-%dT%H:%M:%S.000Z')
                 
