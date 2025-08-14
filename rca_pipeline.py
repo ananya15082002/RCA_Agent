@@ -188,10 +188,28 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
                 start_epoch = int(first_time.timestamp())
                 end_epoch = int(last_time.timestamp())
                 
-                # Use exact error occurrence time with NO buffer for ultra-targeting
-                # This ensures only the specific error is shown
-                # start_epoch = start_epoch  # No buffer
-                # end_epoch = end_epoch      # No buffer
+                # Calculate dynamic time window based on how long ago the error occurred
+                error_duration = end_epoch - start_epoch
+                current_time = int(time.time())
+                time_since_error = current_time - end_epoch
+                
+                # Adjust window size based on how long ago the error occurred
+                if time_since_error > 3600:  # More than 1 hour ago
+                    # For historical errors, use a larger window to ensure visibility
+                    window_size = 1800  # 30 minutes
+                elif time_since_error > 900:  # More than 15 minutes ago
+                    # Use 15-minute window for recent historical errors
+                    window_size = 900  # 15 minutes
+                elif time_since_error > 300:  # More than 5 minutes ago
+                    # Use 10-minute window
+                    window_size = 600  # 10 minutes
+                else:
+                    # Recent error, use 15-minute window
+                    window_size = 900  # 15 minutes
+                
+                # Add buffer around the error occurrence time
+                start_epoch -= window_size // 2  # Half window before
+                end_epoch += window_size // 2    # Half window after
                 
             except Exception as e:
                 print(f"Error parsing error occurrence times: {e}")
@@ -207,10 +225,10 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
         encoded_endpoint = urllib.parse.quote(root_name) if root_name != 'Unknown' else ''
         encoded_category = urllib.parse.quote(exception) if exception != 'Unknown Error' else ''
         
-        # Build the CubeAPM URL with exact timestamps
+        # Build the CubeAPM URL with dynamic time window
         base_url = "https://observability-prod.fxtrt.io/apm"
         
-        # URL parameters - using exact start and end timestamps with targeting
+        # URL parameters - using dynamic start and end timestamps with targeting
         params = {
             'alert_id': str(alert_id),
             'start': str(start_epoch),
@@ -231,6 +249,12 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
         # Build query string
         query_string = '&'.join([f"{k}={v}" for k, v in params.items() if v])
         cubeapm_url = f"{base_url}?{query_string}"
+        
+        print(f"[INFO] Generated CubeAPM link with dynamic window: {window_size//60}min around error time")
+        print(f"[DEBUG] Error time: {first_encountered} to {last_encountered}")
+        print(f"[DEBUG] Time since error: {time_since_error//60} minutes ago")
+        print(f"[DEBUG] Window: {start_epoch} to {end_epoch} (epoch)")
+        print(f"[DEBUG] CubeAPM URL: {cubeapm_url}")
         
         return cubeapm_url
         
