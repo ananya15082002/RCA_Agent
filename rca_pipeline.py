@@ -159,49 +159,41 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
         alert_id = int(hashlib.md5(alert_id_base.encode()).hexdigest()[:16], 16)
         
         # Parse the actual error occurrence times
-        start_epoch = None
-        end_epoch = None
+        start_time = None
+        end_time = None
         
         if first_encountered and last_encountered:
             try:
                 # Parse first encountered time
                 if isinstance(first_encountered, str):
                     if 'IST' in first_encountered:
-                        first_time = datetime.strptime(first_encountered.replace(' IST', ''), '%Y-%m-%d %H:%M:%S')
-                        first_time = IST.localize(first_time)
+                        start_time = datetime.strptime(first_encountered.replace(' IST', ''), '%Y-%m-%d %H:%M:%S')
+                        start_time = IST.localize(start_time)
                     else:
-                        first_time = datetime.fromisoformat(first_encountered.replace('Z', '+00:00'))
+                        start_time = datetime.fromisoformat(first_encountered.replace('Z', '+00:00'))
                 else:
-                    first_time = first_encountered
+                    start_time = first_encountered
                 
                 # Parse last encountered time
                 if isinstance(last_encountered, str):
                     if 'IST' in last_encountered:
-                        last_time = datetime.strptime(last_encountered.replace(' IST', ''), '%Y-%m-%d %H:%M:%S')
-                        last_time = IST.localize(last_time)
+                        end_time = datetime.strptime(last_encountered.replace(' IST', ''), '%Y-%m-%d %H:%M:%S')
+                        end_time = IST.localize(end_time)
                     else:
-                        last_time = datetime.fromisoformat(last_encountered.replace('Z', '+00:00'))
+                        end_time = datetime.fromisoformat(last_encountered.replace('Z', '+00:00'))
                 else:
-                    last_time = last_encountered
+                    end_time = last_encountered
                 
-                # Convert to epoch timestamps
-                start_epoch = int(first_time.timestamp())
-                end_epoch = int(last_time.timestamp())
+                # Convert to UTC for CubeAPM
+                start_time_utc = start_time.astimezone(pytz.utc)
+                end_time_utc = end_time.astimezone(pytz.utc)
                 
-                # Compute relative time window from NOW so historical errors are visible
-                # CubeAPM ignores start/end and respects `time` anchored at current refresh
-                error_duration = max(60, end_epoch - start_epoch)
-                now_epoch = int(time.time())
-                delta_seconds = max(0, now_epoch - end_epoch)
-                # Required minutes so that [now - time, now] fully covers [start, end]
-                required_minutes = (delta_seconds + error_duration + 120 + 59) // 60  # ceil + small buffer
-                # Round to friendly buckets preferred by UI
-                buckets = [5, 10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880]
-                chosen_minutes = next((b for b in buckets if b >= required_minutes), 2880)
-                if chosen_minutes % 60 == 0:
-                    time_param = f"{chosen_minutes//60}h"
-                else:
-                    time_param = f"{chosen_minutes}m"
+                # Format times in the exact format CubeAPM expects: 2025-08-14T07:00:00.000Z~2025-08-14T07:10:00.000Z
+                start_str = start_time_utc.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+                end_str = end_time_utc.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+                
+                # URL encode the time range (encode ~ as %7E)
+                time_param = f"{start_str}%7E{end_str}"
                 
             except Exception as e:
                 print(f"Error parsing error occurrence times: {e}")
@@ -209,7 +201,7 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
         else:
             return None
         
-        # Calculate time parameters
+        # Calculate refresh time
         refresh_time = int(time.time() * 1000)  # Current timestamp in milliseconds
         
         # URL encode the endpoint and category for better targeting
@@ -217,10 +209,10 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
         encoded_endpoint = urllib.parse.quote(root_name) if root_name != 'Unknown' else ''
         encoded_category = urllib.parse.quote(exception) if exception != 'Unknown Error' else ''
         
-        # Build the CubeAPM URL with relative time window anchored to now
+        # Build the CubeAPM URL with exact time range
         base_url = "https://observability-prod.fxtrt.io/apm"
         
-        # URL parameters - use relative `time` instead of start/end (CubeAPM respects this)
+        # URL parameters - use exact time range
         params = {
             'alert_id': str(alert_id),
             'time': time_param,
@@ -241,12 +233,12 @@ def generate_cubeapm_link_from_error_times(card, first_encountered, last_encount
         query_string = '&'.join([f"{k}={v}" for k, v in params.items() if v])
         cubeapm_url = f"{base_url}?{query_string}"
         
-        print(f"[INFO] Generated CubeAPM link with relative window: {time_param} (delta={(delta_seconds//60)}m, duration={error_duration}s)")
+        print(f"[INFO] Generated CubeAPM link with exact time range: {start_str} to {end_str}")
         
         return cubeapm_url
         
     except Exception as e:
-        print(f"[WARN] Error generating CubeAPM link from error times: {e}")
+        print(f"Error generating CubeAPM link: {e}")
         return None
 
 def fetch_error_metrics(start_epoch, end_epoch, start_str, end_str):
